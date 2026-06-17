@@ -10,7 +10,7 @@ import pycountry
 st.set_page_config(page_title="Vasuki Ai 4.0", page_icon="🐍", layout="wide")
 
 # Admin Password - Isko badal dena. Public ko ye nahi pata chalega
-ADMIN_PASS = st.secrets.get("ADMIN_PASS", "vasuki2026")
+ADMIN_PASS = st.secrets.get("ADMIN_PASS", "@vas$%fg<./#uki20//?><gdBV26XZ#!~")
 
 # Session me admin check
 if 'admin' not in st.session_state:
