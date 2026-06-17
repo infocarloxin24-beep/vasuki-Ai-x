@@ -11,7 +11,7 @@ st.set_page_config(page_title="Vasuki Ai 4.0", page_icon="🐍", layout="wide")
 
 # Admin Password - Isko badal dena. Public ko ye nahi pata chalega
 ADMIN_PASS = st.secrets.get("ADMIN_PASS", "@vas$%fg<./#uki20//?><gdBV26XZ#!~")
-
+X_BEARER_TOKEN = st.secrets.get("AAAAAAAAAAAAAAAAAAAAAPfJ%2BAEAAAAAuXi8b2E5%2B1qUe6UiGk0JLFy3qA4%3DLykC3Xe7vmFFihGWwNJaBnlDqNzLQ12jvXdzrAU263D78hTEbq")
 # Session me admin check
 if 'admin' not in st.session_state:
     st.session_state.admin = False
