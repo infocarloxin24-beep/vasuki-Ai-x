@@ -8,7 +8,7 @@ st.title("⚡ Sudarshan: The Tatvadarshi AI")
 st.caption("Geeta se nikla, Bot ko mitane aaya | X Bot Problem ka Brahmastra")
 
 COUNTRIES = {
-    "india": {"flag": "🇮🇳", "ipl": "Blue + Orange - Team India Style 🔥"},
+    "india": {"flag": "🇮🇳", "ip": "Blue + Orange - Team India Style 🔥"},
     "pakistan": {"flag": "🇵🇰", "ipl": "Green + White - PK Style"},
     "usa": {"flag": "🇺🇸", "ipl": "Red + White + Blue - KKR + RR + MI"},
     "united states": {"flag": "🇺🇸", "ipl": "Red + White + Blue - KKR + RR + MI"},
