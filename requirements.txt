@@ -1,5 +1,6 @@
-streamlit  
-pandas 
-requests 
- pytz 
+streamlit
+pandas
+requests
+pytz
 pycountry
+beautifulsoup4
