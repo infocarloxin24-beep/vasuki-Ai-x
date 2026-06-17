@@ -6,6 +6,7 @@ import re
 from datetime import datetime
 import pytz
 import pycountry
+from bs4 import BeautifulSoup
 
 st.set_page_config(page_title="Vasuki Ai 4.0", page_icon="🐍", layout="wide")
 
@@ -32,37 +33,38 @@ def get_all_countries():
 
 COUNTRIES_TZ = get_all_countries()
 
-# FIX 2: X API se data lane ka function add kiya
+# FIX 2: X API + NITTER DONO - AUTOMATIC FALLBACK
 def fetch_x_data(username):
     username = username.replace("@", "").strip()
-    if not X_BEARER_TOKEN:
-        st.error("X_BEARER_TOKEN Streamlit Secrets me set nahi hai")
-        return None
 
-    headers = {"Authorization": f"Bearer {X_BEARER_TOKEN}"}
-    url = f"https://api.x.com/2/users/by/username/{username}?user.fields=created_at,public_metrics,verified,description"
+    # STEP 1: X API try karo agar token hai
+    if X_BEARER_TOKEN:
+        try:
+            headers = {"Authorization": f"Bearer {X_BEARER_TOKEN}"}
+            url = f"https://api.x.com/2/users/by/username/{username}?user.fields=created_at,public_metrics,verified,description"
+            r = requests.get(url, headers=headers, timeout=10)
+            if r.status_code == 200:
+                d = r.json()['data']
+                age = (datetime.utcnow() - datetime.strptime(d['created_at'], '%Y-%m-%dT%H:%M:%S.000Z')).days
+                return {'is_verified': d.get('verified', False), 'tweet_count': d['public_metrics']['tweet_count'], 'account_age_days': age, 'bio': d.get('description', ''), 'followers': d['public_metrics']['followers_count'], 'source': 'X API'}
+        except: pass
 
+    # STEP 2: NITTER se nikal agar API fail hui
     try:
+        url = f"https://nitter.net/{username}"
+        headers = {"User-Agent": "Mozilla/5.0"}
         r = requests.get(url, headers=headers, timeout=10)
         if r.status_code == 200:
-            d = r.json()['data']
-            age = (datetime.utcnow() - datetime.strptime(d['created_at'], '%Y-%m-%dT%H:%M:%S.000Z')).days
-            return {
-                'is_verified': d.get('verified', False),
-                'tweet_count': d['public_metrics']['tweet_count'],
-                'account_age_days': age,
-                'bio': d.get('description', ''),
-                'followers': d['public_metrics']['followers_count']
-            }
-        elif r.status_code == 401:
-            st.error("Token galat hai. X Developer Portal se check kar")
-        elif r.status_code == 429:
-            st.error("API rate limit hit. Thodi der baad try kar")
-        else:
-            st.error(f"API Error: {r.status_code}")
-    except Exception as e:
-        st.error(f"Network error: {e}")
-    return None
+            soup = BeautifulSoup(r.text, 'html.parser')
+            bio = soup.find('div', class_='profile-bio')
+            bio = bio.text.strip() if bio else "Bio nahi mila"
+            followers = soup.find('a', href=f'/{username}/followers')
+            followers = followers.text.split()[0] if followers else "0"
+            tweets = soup.find('a', href=f'/{username}')
+            tweets = tweets.text.split()[0] if tweets else "0"
+            return {'bio': bio, 'followers': followers, 'tweet_count': tweets, 'is_verified': "Verified" in r.text, 'account_age_days': 365, 'source': 'Nitter Free'}
+        else: return None
+    except: return None
 
 st.title("🐍 Vasuki Ai 4.0 - Bot Detector")
 st.caption("X/Twitter Account Scanner | Powered by AI")
@@ -150,7 +152,7 @@ with tab1:
     username = st.text_input("X Username:", placeholder="@username")
 
     # FIX 3: Auto + Manual mode ka option diya
-    scan_mode = st.radio("Scan Mode:", ["Auto - X API se data lao", "Manual - Khud bharo"], horizontal=True)
+    scan_mode = st.radio("Scan Mode:", ["Auto - X API/Nitter se data lao", "Manual - Khud bharo"], horizontal=True)
 
     # Variables default set kar do
     is_verified = False
@@ -177,22 +179,22 @@ with tab1:
             tweet_text = st.text_area("Sample Tweet:")
         bio = st.text_area("Bio:")
     else:
-        st.info("Auto Mode: Sirf username daal. Baki Vasuki bhar dega X API se")
+        st.info("Auto Mode: Sirf username daal. Baki Vasuki bhar dega X API ya Nitter se")
 
     if st.button("🐍 Scan Karo", type="primary"):
         if username:
             # FIX 4: Auto mode me API call karo
-            if scan_mode == "Auto - X API se data lao":
-                with st.spinner("X API se data laa raha hu..."):
+            if scan_mode == "Auto - X API/Nitter se data lao":
+                with st.spinner("Data laa raha hu..."):
                     api_data = fetch_x_data(username)
                 if api_data:
                     is_verified = api_data['is_verified']
-                    tweet_count = api_data['tweet_count']
+                    tweet_count = int(api_data['tweet_count']) if str(api_data['tweet_count']).isdigit() else 0
                     account_age_days = api_data['account_age_days']
                     bio = api_data['bio']
-                    st.success(f"Data mil gaya! Followers: {api_data['followers']}, Verified: {is_verified}")
+                    st.success(f"Data mil gaya! Source: {api_data['source']} | Followers: {api_data['followers']} | Verified: {is_verified}")
                 else:
-                    st.error("Auto scan fail. Token check kar ya Manual mode use kar")
+                    st.error("Auto scan fail. Nitter down ho sakta hai. Manual mode use kar")
                     st.stop()
 
             score, reasons = check_bot_score_gupt(
