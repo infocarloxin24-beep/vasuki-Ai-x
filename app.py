@@ -7,7 +7,6 @@ st.set_page_config(page_title="Sudarshan: Bot-Vinashak AI", page_icon="⚡", lay
 st.title("⚡ Sudarshan: The Tatvadarshi AI")
 st.caption("Geeta se nikla, Bot ko mitane aaya | X Bot Problem ka Brahmastra")
 
-# 195 Countries + IPL Style Jersey Colors - Short version for demo, full 195 add kar sakta hai
 COUNTRIES = {
     "india": {"flag": "🇮🇳", "ipl": "Blue + Orange - Team India Style 🔥"},
     "pakistan": {"flag": "🇵🇰", "ipl": "Green + White - PK Style"},
@@ -20,7 +19,9 @@ COUNTRIES = {
     "united kingdom": {"flag": "🇬🇧", "ipl": "Red + White + Blue - KKR + RR + MI"},
     "bangladesh": {"flag": "🇧🇩", "ipl": "Green + Red - PK + KKR"},
     "vietnam": {"flag": "🇻🇳", "ipl": "Red + Yellow - KKR + CSK"},
-    # Note: Yaha poore 195 daal de jo maine pehle diye the. Space ke liye short rakha hai
+    "bharat": {"flag": "🇮🇳", "ipl": "Blue + Orange - Team India Style 🔥"},
+    "indiya": {"flag": "🇮🇳", "ipl": "Blue + Orange - Team India Style 🔥"},
+    "america": {"flag": "🇺🇸", "ipl": "Red + White + Blue - KKR + RR + MI"},
 }
 
 def check_bot_score(username, bio="", is_verified=False, tweet_count=0, account_age_days=0):
@@ -46,7 +47,7 @@ def check_bot_score(username, bio="", is_verified=False, tweet_count=0, account_
         score += 30
         reasons.append("🚨 Verified Bot Loophole: Blue tick + number wala naam")
 
-    if re.search(r'as an ai language model|i cannot|i'm an ai|i am an ai', bio.lower()):
+    if re.search(r'as an ai language model|i cannot|i\'m an ai|i am an ai', bio.lower()):
         score += 40
         reasons.append("🚨 Bio me AI ke phrases - Pakka bot")
 
@@ -146,11 +147,12 @@ with tab3:
     st.subheader("Bot Kaise Bante Hai? Dushman ko Pehchano")
 
     st.markdown("### Insaan vs Bot Farm - Farak Kya Hai?")
-    st.table({
+    data = {
         "": ["Time", "Kaise banata", "Kitne bana sakta", "Verify kaise"],
         "Tu Insaan": ["5-10 min lagte hai", "Mobile/Email, OTP, Photo, Bio khud type karta", "1-2 account din me", "Apna number/Email deta hai"],
         "Bot Farm Wala": ["5-10 second me 1 account", "Script + Software se automatic", "10,000+ account din me", "Fake number, Temp mail, SIM farm use"]
-    })
+    }
+    st.table(data)
 
     st.markdown("### Bot Account Kaise Bante Hai? 3 Tareeka:")
 
@@ -184,4 +186,4 @@ with tab3:
         """)
 
 st.markdown("---")
-st.caption("Sudarshan v4.0 | The Tatvadarshi AI | Geeta se nikla, Bot ko mitane aaya | X Bot Problem ka Antim Solution")
+st.caption("Sudarshan v4.1 | The Tatvadarshi AI | Geeta se nikla, Bot ko mitane aaya | Bug Fixed ✅")
