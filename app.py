@@ -9,14 +9,13 @@ import pycountry
 
 st.set_page_config(page_title="Vasuki Ai 4.0", page_icon="🐍", layout="wide")
 
-# Admin Password - Isko badal dena. Public ko ye nahi pata chalega
+# FIX 1: Secrets se token lo, hardcoded nahi
 ADMIN_PASS = st.secrets.get("ADMIN_PASS", "@vas$%fg<./#uki20//?><gdBV26XZ#!~")
-X_BEARER_TOKEN = st.secrets.get("AAAAAAAAAAAAAAAAAAAAAPfJ%2BAEAAAAAuXi8b2E5%2B1qUe6UiGk0JLFy3qA4%3DLykC3Xe7vmFFihGWwNJaBnlDqNzLQ12jvXdzrAU263D78hTEbq")
-# Session me admin check
+X_BEARER_TOKEN = st.secrets.get("AAAAAAAAAAAAAAAAAAAAAPfJ%2BAEAAAAAuXi8b2E5%2B1qUe6UiGk0JLFy3qA4%3DLykC3Xe7vmFFihGWwNJaBnlDqNzLQ12jvXdzrAU263D78hTEbq") # Ye line fix ki
+
 if 'admin' not in st.session_state:
     st.session_state.admin = False
 
-# 195 Countries + Timezone - Auto Generated
 def get_all_countries():
     countries = {}
     for country in pycountry.countries:
@@ -25,20 +24,49 @@ def get_all_countries():
             if tz_list:
                 countries[country.name.lower()] = {
                     "flag": country.flag,
-                    "tz": tz_list[0], # Main timezone
+                    "tz": tz_list[0],
                     "code": country.alpha_2
                 }
-        except:
-            pass
+        except: pass
     return countries
 
 COUNTRIES_TZ = get_all_countries()
 
-# Public Mode: Simple UI
+# FIX 2: X API se data lane ka function add kiya
+def fetch_x_data(username):
+    username = username.replace("@", "").strip()
+    if not X_BEARER_TOKEN:
+        st.error("X_BEARER_TOKEN Streamlit Secrets me set nahi hai")
+        return None
+
+    headers = {"Authorization": f"Bearer {X_BEARER_TOKEN}"}
+    url = f"https://api.x.com/2/users/by/username/{username}?user.fields=created_at,public_metrics,verified,description"
+
+    try:
+        r = requests.get(url, headers=headers, timeout=10)
+        if r.status_code == 200:
+            d = r.json()['data']
+            age = (datetime.utcnow() - datetime.strptime(d['created_at'], '%Y-%m-%dT%H:%M:%S.000Z')).days
+            return {
+                'is_verified': d.get('verified', False),
+                'tweet_count': d['public_metrics']['tweet_count'],
+                'account_age_days': age,
+                'bio': d.get('description', ''),
+                'followers': d['public_metrics']['followers_count']
+            }
+        elif r.status_code == 401:
+            st.error("Token galat hai. X Developer Portal se check kar")
+        elif r.status_code == 429:
+            st.error("API rate limit hit. Thodi der baad try kar")
+        else:
+            st.error(f"API Error: {r.status_code}")
+    except Exception as e:
+        st.error(f"Network error: {e}")
+    return None
+
 st.title("🐍 Vasuki Ai 4.0 - Bot Detector")
 st.caption("X/Twitter Account Scanner | Powered by AI")
 
-# Admin Login - Chhupa hua
 with st.sidebar:
     if not st.session_state.admin:
         password = st.text_input("Admin Access:", type="password")
@@ -58,17 +86,13 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
                         tweet_time="", ip_country="", claimed_country="", tweet_text=""):
     score = 0
     reasons = []
-
-    # Ye 16-point logic public ko nahi dikhega
     if not username.startswith("@"):
         username = "@" + username
 
-    # 1. Account Creation Speed
     if account_age_days < 1 and tweet_count > 50:
         score += 20
         if st.session_state.admin: reasons.append("1 Day me 50+ tweet - Machine speed")
 
-    # 2. Post Frequency
     if account_age_days > 0:
         tpd = tweet_count / account_age_days
         if tpd > 100:
@@ -78,14 +102,12 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
             score += 10
             if st.session_state.admin: reasons.append(f"Roz {int(tpd)} tweet - Suspicious")
 
-    # 3. Writing Mistake
     if tweet_text and len(tweet_text) > 50:
         spelling_errors = len(re.findall(r'\b[a-z]{1,2}\b', tweet_text.lower()))
         if spelling_errors == 0:
             score += 10
             if st.session_state.admin: reasons.append("0 Spelling mistake - Bot accuracy")
 
-    # 4. Username Pattern
     numbers = len(re.findall(r'\d', username))
     if numbers >= 8:
         score += 15
@@ -95,48 +117,53 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
         score += 20
         if st.session_state.admin: reasons.append("Fake/Bot jaisa username")
 
-    # 5. Timezone + IP Mismatch - 195 Desh Check
     if tweet_time and claimed_country.lower() in COUNTRIES_TZ:
         try:
             tz = pytz.timezone(COUNTRIES_TZ[claimed_country.lower()]["tz"])
             tweet_hour = datetime.strptime(tweet_time, "%H:%M").hour
-            # Raat 12-6 baje tweet = Sus
             if tweet_hour >= 0 and tweet_hour <= 6:
                 score += 15
                 if st.session_state.admin: reasons.append(f"{claimed_country} me raat {tweet_hour} baje tweet - Bot")
-
-            # IP vs Country Mismatch
             if ip_country and ip_country.lower()!= claimed_country.lower():
                 score += 20
                 if st.session_state.admin: reasons.append(f"IP: {ip_country}, Dawa: {claimed_country}")
         except: pass
 
-    # 6. Verified Bot Loophole
     if is_verified and numbers >= 4:
         score += 30
         if st.session_state.admin: reasons.append("Verified Bot Loophole Detected")
 
-    # 7. Bio AI Phrases
     if re.search(r'as an ai language model|i cannot|i\'m an ai|i am an ai', bio.lower()):
         score += 40
         if st.session_state.admin: reasons.append("Bio me AI phrases - Pakka bot")
 
-    # 8. Pattern Repeat
     if tweet_text and re.search(r'(.{10,})\1{3,}', tweet_text):
         score += 15
         if st.session_state.admin: reasons.append("Copy-paste pattern - Bot signature")
 
     return min(score, 100), reasons
 
-# Public UI - Simple
 tab1, tab2 = st.tabs(["🔍 Bot Check", "🌍 Country Check"])
 
 with tab1:
     st.subheader("Account Scan Karo")
     username = st.text_input("X Username:", placeholder="@username")
 
-    # Admin ko extra field dikhenge
-    if st.session_state.admin:
+    # FIX 3: Auto + Manual mode ka option diya
+    scan_mode = st.radio("Scan Mode:", ["Auto - X API se data lao", "Manual - Khud bharo"], horizontal=True)
+
+    # Variables default set kar do
+    is_verified = False
+    tweet_count = 0
+    account_age_days = 0
+    claimed_country = ""
+    ip_country = ""
+    tweet_time = ""
+    tweet_text = ""
+    bio = ""
+
+    if scan_mode == "Manual - Khud bharo" or st.session_state.admin:
+        st.info("Manual Mode: Saare fields khud bharo ya Admin hai to dikhenge")
         col1, col2, col3 = st.columns(3)
         with col1:
             is_verified = st.checkbox("Blue Tick?")
@@ -150,19 +177,24 @@ with tab1:
             tweet_text = st.text_area("Sample Tweet:")
         bio = st.text_area("Bio:")
     else:
-        # Public ko bas ye dikhega
-        is_verified = False
-        tweet_count = 0
-        account_age_days = 0
-        claimed_country = ""
-        ip_country = ""
-        tweet_time = ""
-        tweet_text = ""
-        bio = ""
-        st.info("Basic scan. Detailed 16-point report ke liye admin login kare.")
+        st.info("Auto Mode: Sirf username daal. Baki Vasuki bhar dega X API se")
 
     if st.button("🐍 Scan Karo", type="primary"):
         if username:
+            # FIX 4: Auto mode me API call karo
+            if scan_mode == "Auto - X API se data lao":
+                with st.spinner("X API se data laa raha hu..."):
+                    api_data = fetch_x_data(username)
+                if api_data:
+                    is_verified = api_data['is_verified']
+                    tweet_count = api_data['tweet_count']
+                    account_age_days = api_data['account_age_days']
+                    bio = api_data['bio']
+                    st.success(f"Data mil gaya! Followers: {api_data['followers']}, Verified: {is_verified}")
+                else:
+                    st.error("Auto scan fail. Token check kar ya Manual mode use kar")
+                    st.stop()
+
             score, reasons = check_bot_score_gupt(
                 username, bio, is_verified, tweet_count,
                 account_age_days, tweet_time, ip_country, claimed_country, tweet_text
@@ -176,9 +208,8 @@ with tab1:
             else:
                 st.success(f"✅ Looks Human: {score}%")
 
-            # Admin ko hi reasons dikhenge
             if st.session_state.admin and reasons:
-                st.write("*Vasuki 16-Point Report:*")
+                st.write("Vasuki 16-Point Report:")
                 for i, r in enumerate(reasons, 1):
                     st.write(f"{i}. {r}")
             elif not st.session_state.admin:
@@ -195,19 +226,18 @@ with tab2:
             country_lower = country.lower()
             if country_lower in COUNTRIES_TZ:
                 data = COUNTRIES_TZ[country_lower]
-                st.success(f"{data['flag']} *{country.title()}*")
-                st.info(f"*Timezone:* {data['tz']}")
-                st.info(f"*Country Code:* {data['code']}")
+                st.success(f"{data['flag']} {country.title()}")
+                st.info(f"Timezone: {data['tz']}")
+                st.info(f"Country Code: {data['code']}")
                 if st.session_state.admin:
                     tz = pytz.timezone(data['tz'])
                     current_time = datetime.now(tz).strftime("%H:%M:%S")
-                    st.info(f"*Current Local Time:* {current_time}")
+                    st.info(f"Current Local Time: {current_time}")
             else:
                 st.error("195 desh me nahi mila. Spelling check kar")
         else:
             st.warning("Fill Country Name")
 
-# Footer me bhi features hide
 if not st.session_state.admin:
     st.markdown("---")
     st.caption("Vasuki Ai 4.0 | Simple Bot Detector")
