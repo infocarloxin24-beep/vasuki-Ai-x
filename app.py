@@ -205,7 +205,7 @@ with tab2:
             else:
                 st.error("195 desh me nahi mila. Spelling check kar")
         else:
-            st.warning("Desh daal pehle")
+            st.warning("Fill Country Name")
 
 # Footer me bhi features hide
 if not st.session_state.admin:
