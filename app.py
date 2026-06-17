@@ -10,7 +10,7 @@ import pycountry
 st.set_page_config(page_title="Vasuki Ai 4.0", page_icon="🐍", layout="wide")
 
 # FIX 1: Secrets se token lo, hardcoded nahi
-ADMIN_PASS = st.secrets.get("ADMIN_PASS", "@vas$%fg<./#uki20//?><gdBV26XZ#!~")
+ADMIN_PASS = st.secrets.get("ADMIN_PASS", "")
 X_BEARER_TOKEN = st.secrets.get("X_BEARER_TOKEN")
 
 if 'admin' not in st.session_state:
