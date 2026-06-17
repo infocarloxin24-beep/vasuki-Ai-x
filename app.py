@@ -213,4 +213,4 @@ if not st.session_state.admin:
     st.caption("Vasuki Ai 4.0 | Simple Bot Detector")
 else:
     st.markdown("---")
-    st.caption("Vasuki Ai 4.0  | 16-Point | 195 Timezone | IP Check | Speed+Accuracy | Admin Mode ✅") Made In india
+    st.caption("Vasuki Ai 4.0 made in india | 16-Point | 195 Timezone | IP Check | Speed+Accuracy | Admin Mode ✅")
