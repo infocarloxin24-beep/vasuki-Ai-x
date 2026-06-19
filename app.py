@@ -327,6 +327,6 @@ with col_right:
 # Footer
 st.markdown("---")
 st.markdown(
-    "<div style='text-align: center; color: #666;'>🐍 Vasuki Ai 4.0 - Bot Detector | Built with Streamlit & Supabase</div>",
+    "<div style='text-align: center; color: #666;'>🐍 Vasuki Ai 4.0 - Bot Detector | Built by Nishad Singh Made in india</div>",
     unsafe_allow_html=True
 )
