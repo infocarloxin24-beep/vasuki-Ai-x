@@ -4,3 +4,4 @@ requests
 pytz
 pycountry
 beautifulsoup4
+supabase
