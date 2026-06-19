@@ -10,22 +10,14 @@ import pytz
 import pycountry
 from bs4 import BeautifulSoup
 
-# SECRETS SE TOKEN LO
+# SECRETS SE TOKEN LO - dotenv hata diya
 ADMIN_PASS = st.secrets.get("ADMIN_PASS", "admin123")
 X_BEARER_TOKEN = st.secrets.get("X_BEARER_TOKEN")
 
 if 'admin' not in st.session_state:
     st.session_state.admin = False
 
-# 195 COUNTRIES LIST - FIX
 def get_all_countries():
-    countries_list = []
-    for country in pycountry.countries:
-        countries_list.append(country.name)
-    return sorted(countries_list)
-
-# TIMEZONE WALE COUNTRIES - ALAG FUNCTION
-def get_countries_with_tz():
     countries = {}
     for country in pycountry.countries:
         try:
@@ -39,8 +31,7 @@ def get_countries_with_tz():
         except: pass
     return countries
 
-ALL_COUNTRIES = get_all_countries() # 195 Countries
-COUNTRIES_TZ = get_countries_with_tz() # Timezone ke liye
+COUNTRIES_TZ = get_all_countries()
 
 # X API + NITTER DONO - AUTOMATIC FALLBACK
 def fetch_x_data(username):
@@ -150,6 +141,7 @@ tab1, tab2 = st.tabs(["🔍 Bot Check", "🌍 Country Check"])
 with tab1:
     st.subheader("Account or Post Scan Karo")
 
+    # SOCIAL MEDIA DROPDOWN - YAHI HAI
     platform = st.selectbox(
         "सोशल मीडिया प्लेटफॉर्म चुनें (Select Platform):",
         ["Twitter / X", "Facebook", "Instagram", "YouTube", "LinkedIn", "WhatsApp", "Other Platforms"]
@@ -158,6 +150,7 @@ with tab1:
     username = st.text_input(f"{platform} Username / Profile Link:", placeholder="@username or paste profile URL")
     scan_mode = st.radio("Scan Mode:", ["Auto - X API/Nitter se data lao", "Manual - Khud bharo"])
 
+    # Variables default set
     is_verified = False
     tweet_count = 0
     account_age_days = 0
@@ -184,9 +177,8 @@ with tab1:
             account_age_days = st.number_input("Account Age (Days)", 0, value=0)
             tweet_time = st.text_input("Last Tweet Time (HH:MM)", "14:30")
 
-        # 195 COUNTRIES DROPDOWN - FIX
-        claimed_country = st.selectbox("Claimed Country", ALL_COUNTRIES, key="claimed_country")
-        ip_country = st.selectbox("Real IP Country", ALL_COUNTRIES, key="ip_country")
+        claimed_country = st.selectbox("Claimed Country", list(COUNTRIES_TZ.keys()))
+        ip_country = st.selectbox("Real IP Country", list(COUNTRIES_TZ.keys()))
 
     if st.button("🚀 Scan Karo"):
         if username or (scan_mode == "Manual - Khud bharo" and tweet_text):
@@ -215,6 +207,7 @@ with tab1:
                 is_bot = score >= 50
                 result_text = f"🤖 {platform} Bot - {score}% Match" if is_bot else f"✅ Human - {100-score}% Safe"
 
+                # TIMESTAMP HATA DIYA - SUPABASE AUTO CREATED_AT USE KAREGA
                 result = {
                     "username": f"[{platform}] {clean_username}",
                     "platform": platform,
@@ -250,19 +243,17 @@ with tab2:
 
     col1, col2 = st.columns(2)
     with col1:
-        # 195 COUNTRIES DROPDOWN - FIX
-        claimed = st.selectbox("Claimed Country:", ALL_COUNTRIES, key="claimed_cc")
+        claimed = st.selectbox("Claimed Country:", list(COUNTRIES_TZ.keys()), key="claimed_cc")
     with col2:
-        # 195 COUNTRIES DROPDOWN - FIX
-        real_ip = st.selectbox("Real IP Country:", ALL_COUNTRIES, key="real_cc")
+        real_ip = st.selectbox("Real IP Country:", list(COUNTRIES_TZ.keys()), key="real_cc")
 
     username_cc = st.text_input("Username for reference:", placeholder="@username", key="cc_user")
 
     if st.button("🔍 Country Check Karo"):
         if claimed.lower()!= real_ip.lower():
             st.error(f"🚨 Mismatch Detected!")
-            st.write(f"Claimed: {claimed}")
-            st.write(f"Real IP: {real_ip}")
+            st.write(f"Claimed: {claimed} {COUNTRIES_TZ[claimed.lower()]['flag']}")
+            st.write(f"Real IP: {real_ip} {COUNTRIES_TZ[real_ip.lower()]['flag']}")
             st.warning("Ye account VPN/Proxy use kar raha hai ya location fake hai.")
 
             result = {
@@ -333,9 +324,9 @@ with col_right:
     except:
         st.metric("Total Scans", "N/A")
 
-# Footer with Tiranga
+# Footer
 st.markdown("---")
 st.markdown(
-    "<div style='text-align: center; color: #666;'>🐍 Vasuki Ai 4.0 - Bot Detector | Built by Nishad Singh 🇮🇳 | Made in Bharat</div>",
+    "<div style='text-align: center; color: #666;'>🐍 Vasuki Ai 4.0 - Bot Detector | Built with Streamlit & Supabase</div>",
     unsafe_allow_html=True
 )
