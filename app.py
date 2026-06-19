@@ -3,14 +3,10 @@ import requests
 from datetime import datetime
 from supabase import create_client, Client
 import os
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
-# Supabase configuration
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+# Supabase configuration - Streamlit secrets use karo
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Page configuration
@@ -24,13 +20,13 @@ st.set_page_config(
 # Custom CSS
 st.markdown("""
 <style>
-   .main-header {
+ .main-header {
         font-size: 2.5rem;
         color: #1f77b4;
         text-align: center;
         margin-bottom: 2rem;
     }
-   .stButton > button {
+ .stButton > button {
         width: 100%;
         background-color: #1f77b4;
         color: white;
@@ -39,7 +35,7 @@ st.markdown("""
         padding: 0.5rem 1rem;
         font-weight: bold;
     }
-   .stButton > button:hover {
+ .stButton > button:hover {
         background-color: #0d5a8a;
     }
 </style>
@@ -195,7 +191,7 @@ with col1:
                     if ip_address:
                         real_country = get_ip_location(ip_address)
                     else:
-                        real_country = "Unknown" # Placeholder if no IP provided
+                        real_country = "Unknown"
 
                     if claimed == real_country:
                         result_text = f"✅ Country Match: {claimed}"
