@@ -204,7 +204,7 @@ with tab1:
 
         col1, col2 = st.columns(2)
         with col1:
-            # VERIFIED / UNVERIFIED OPTION - NAYA ADD KIYA
+            # VERIFIED / UNVERIFIED OPTION - FIX KIYA
             verified_status = st.radio("Verified Status:", ["❌ Unverified", "✅ Verified"], horizontal=True)
             is_verified = True if verified_status == "✅ Verified" else False
             tweet_count = st.number_input("Total Tweets/Posts", 0, value=0)
@@ -267,7 +267,7 @@ with tab1:
                     st.progress(score/100)
                     st.metric("Bot Score", f"{score}%", delta=f"{'Danger' if score>=70 else 'Suspicious' if score>=50 else 'Safe'}", delta_color="inverse")
 
-                    # VASUKI RESULT MEIN VERIFIED DIKHAO - NAYA ADD KIYA
+                    # VASUKI RESULT MEIN VERIFIED DIKHAO
                     st.write(f"*✔️ Verified Status:* {verified_text}")
 
                     if is_bot:
@@ -335,24 +335,30 @@ with tab2:
             st.success(f"✅ Match! Dono country same hain: {claimed}")
             st.balloons()
 
-# SIDEBAR - VERIFIED / UNVERIFIED DIKHEGA
+# SIDEBAR - NONETYPE ERROR FIX + VERIFIED STATUS
 st.sidebar.header("📜 Live Scan History")
 try:
     scans = supabase.table("scans").select("*").order("created_at", desc=True).limit(10).execute()
     if scans.data:
         for scan in scans.data:
-            is_bot = "Bot" in scan['result'] or "Mismatch" in scan['result']
+            is_bot = "Bot" in str(scan.get('result', ''))
             verdict_icon = "🤖 Bot" if is_bot else "✅ Human"
             score = scan.get('score', 0)
-            username_display = scan['username'].replace('[Twitter / X] ', '').replace('[CountryCheck] ', '').replace('[Facebook] ', '').replace('[Instagram] ', '')
-            tpd = scan.get('tpd', 0)
-            account_age = scan.get('account_age', 0)
-            tweet_time = scan.get('tweet_time', 'N/A')
-            total_posts = scan.get('tweet_count', 0)
-            flags = scan.get('flags', 'None')
-            verified_text = "✅ Verified" if scan.get('is_verified', False) else "❌ Unverified" # YE NAYA
 
-            # CARD MEIN VERIFIED STATUS - NAYA ADD KIYA
+            # NONE HANDLE KIYA - ERROR FIX
+            username_raw = scan.get('username', '')
+            username_display = str(username_raw).replace('[Twitter / X] ', '').replace('[CountryCheck] ', '').replace('[Facebook] ', '').replace('[Instagram] ', '').replace('[YouTube] ', '').replace('[LinkedIn] ', '').replace('[WhatsApp] ', '').replace('[Other Platforms] ', '') if username_raw else 'Unknown'
+
+            tpd = scan.get('tpd', 0) or 0
+            account_age = scan.get('account_age', 0) or 0
+            tweet_time = scan.get('tweet_time', 'N/A') or 'N/A'
+            total_posts = scan.get('tweet_count', 0) or 0
+            flags = scan.get('flags', 'None') or 'None'
+            verified_text = "✅ Verified" if scan.get('is_verified', False) else "❌ Unverified"
+            created_at = scan.get('created_at', '')
+            time_display = created_at[:16].replace('T', ' ') if created_at else 'N/A'
+
+            # CARD MEIN VERIFIED STATUS
             st.sidebar.markdown(f"""
             <div style="
                 background: #0f172a;
@@ -373,9 +379,9 @@ try:
                 <div>📝 Total Posts: {total_posts}</div>
                 <div>✔️ Verified: {verified_text}</div>
                 <div style="margin-top: 4px;">⚠️ Flags:</div>
-                <div style="font-size: 10px; color: #94a3b8;">• {flags.replace(', ', '<br>• ')}</div>
+                <div style="font-size: 10px; color: #94a3b8;">• {str(flags).replace(', ', '<br>• ')}</div>
                 <div style="color: #64748b; font-size: 9px; margin-top: 4px;">
-                    {scan['created_at'][:16].replace('T', ' ')}
+                    {time_display}
                 </div>
             """, unsafe_allow_html=True)
     else:
