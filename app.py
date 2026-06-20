@@ -162,6 +162,9 @@ st.set_page_config(page_title="Vasuki Ai 4.0 - Bot Detector", page_icon="🐍", 
 st.title("🐍 Vasuki Ai 4.0 - Universal Bot Detector")
 st.caption("Multi-Platform Account & Text Scanner | Powered by AI")
 
+# HEADER MEIN ADD KARO - TITLE KE NEECHE
+st.info("⚠️ *Disclaimer:* This tool provides an AI-assisted probability estimate and should not be treated as definitive proof.")
+
 with st.sidebar:
     if not st.session_state.admin:
         password = st.text_input("Admin Access:", type="password")
