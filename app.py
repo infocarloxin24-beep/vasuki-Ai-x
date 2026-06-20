@@ -86,7 +86,7 @@ def fetch_x_data(username):
     except: return None
     return None
 
-# ✅ FIXED FUNCTION - FLAG WALE NAME KE LIYE
+# ✅ UPDATED FUNCTION - USER COUNTRY TIMEZONE SE CONVERT
 def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, account_age=0,
                          tweet_time="", user_view_country="", claimed_country="", tweet_text=""):
     score = 0
@@ -111,21 +111,19 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
         score += 20
         if st.session_state.admin: reasons.append("Fake/Bot jaisa username")
 
-    # ✅ TIME CHECK - FIXED
+    # ✅ TIME CHECK - USER KE COUNTRY SE IST MEIN CONVERT
     if tweet_time and user_view_country and claimed_country:
         try:
             tweet_hour, tweet_min = map(int, tweet_time.split(":"))
 
-            # User jis country se dekh raha hai uska timezone - DIRECT KEY USE
-            if user_view_country in COUNTRIES_TZ:
-                user_tz_str = COUNTRIES_TZ[user_view_country]["tz"]
+            # User jis country se dekh raha hai uska timezone
+            user_country_name = user_view_country.split(' ')[1] # Flag hatao
+            if user_country_name in COUNTRIES_TZ:
+                user_tz_str = COUNTRIES_TZ[user_country_name]["tz"]
                 user_tz = pytz.timezone(user_tz_str)
 
                 # Claimed country ka timezone
-                if claimed_country in COUNTRIES_TZ:
-                    claimed_tz_str = COUNTRIES_TZ[claimed_country]["tz"]
-                else:
-                    claimed_tz_str = 'Asia/Kolkata'
+                claimed_tz_str = COUNTRIES_TZ[claimed_country]["tz"]
                 claimed_tz = pytz.timezone(claimed_tz_str)
 
                 # User ka time → UTC → Claimed country ka time
@@ -137,12 +135,11 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
                 if 0 <= country_hour <= 6:
                     score += 15
                     if st.session_state.admin: reasons.append(f"{claimed_country} me raat {country_hour}:00 baje tweet - Suspicious")
-        except Exception as e: 
-            if st.session_state.admin: st.write(f"Time Error: {e}")
+        except: pass
 
-    # ✅ COUNTRY MISMATCH = +60 SCORE - FIXED
+    # ✅ COUNTRY MISMATCH = +60 SCORE
     if user_view_country and claimed_country:
-        user_country_name = COUNTRIES_TZ[user_view_country]["name"]
+        user_country_name = user_view_country.split(' ')[1]
         if user_country_name.lower()!= claimed_country.lower():
             score += 60
             if st.session_state.admin: reasons.append(f"Country Mismatch: {claimed_country} vs {user_country_name} - High Risk")
