@@ -101,7 +101,6 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
         if st.session_state.admin: reasons.append("Fake/Bot jaisa username")
     if tweet_time and claimed_country.lower() in COUNTRIES_TZ:
         try:
-            tz = pytz.timezone(COUNTRIES_TZ[claimed_country.lower()]["tz"])
             tweet_hour = datetime.strptime(tweet_time, "%H:%M").hour
             if tweet_hour >= 0 and tweet_hour <= 6:
                 score += 15
@@ -121,7 +120,7 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
         if st.session_state.admin: reasons.append("Copy-paste pattern - Bot signature")
     return min(score, 100), reasons
 
-# SABHI DESH KI TIMING NIKALNE KA FUNCTION - NAYA ADD KIYA
+# SABHI DESH KI TIMING NIKALNE KA FUNCTION
 def get_world_timing(tweet_time_str):
     if not tweet_time_str:
         return []
@@ -129,10 +128,8 @@ def get_world_timing(tweet_time_str):
         hour, minute = map(int, tweet_time_str.split(":"))
         now = datetime.now()
         input_dt = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-
         countries_to_show = ["India", "United States", "United Kingdom", "Australia", "Japan", "Russia", "China", "Brazil", "United Arab Emirates", "Germany"]
         result = []
-
         for country_name in countries_to_show:
             try:
                 country = pycountry.countries.get(name=country_name)
@@ -140,19 +137,15 @@ def get_world_timing(tweet_time_str):
                     tz_list = pytz.country_timezones.get(country.alpha_2)
                     if tz_list:
                         tz = pytz.timezone(tz_list[0])
-                        # Assume input time is in IST for simplicity, convert to UTC then to target
                         ist = pytz.timezone('Asia/Kolkata')
                         local_dt = ist.localize(input_dt)
                         utc_dt = local_dt.astimezone(pytz.utc)
                         country_time = utc_dt.astimezone(tz)
-
                         flag = "🌙" if 0 <= country_time.hour <= 6 else "☀️"
                         result.append(f"{country_name}: {country_time.strftime('%H:%M')} {flag}")
-            except:
-                pass
+            except: pass
         return result
-    except:
-        return []
+    except: return []
 
 # Supabase connection
 url = st.secrets["SUPABASE_URL"]
@@ -211,13 +204,14 @@ with tab1:
 
         col1, col2 = st.columns(2)
         with col1:
-            is_verified = st.checkbox("Verified Account?")
+            # VERIFIED / UNVERIFIED OPTION - NAYA ADD KIYA
+            verified_status = st.radio("Verified Status:", ["❌ Unverified", "✅ Verified"], horizontal=True)
+            is_verified = True if verified_status == "✅ Verified" else False
             tweet_count = st.number_input("Total Tweets/Posts", 0, value=0)
         with col2:
             account_age_days = st.number_input("Account Age (Days)", 0, value=0)
             tweet_time = st.text_input("Last Tweet Time (HH:MM)", "14:30")
 
-        # 195 COUNTRIES DROPDOWN - FIX
         claimed_country = st.selectbox("Claimed Country", ALL_COUNTRIES, key="claimed_country")
         ip_country = st.selectbox("Real IP Country", ALL_COUNTRIES, key="ip_country")
 
@@ -247,14 +241,23 @@ with tab1:
 
                 is_bot = score >= 50
                 result_text = f"🤖 {platform} Bot - {score}% Match" if is_bot else f"✅ Human - {100-score}% Safe"
+                tpd = int(tweet_count / max(account_age_days, 1))
+                verified_text = "✅ Verified" if is_verified else "❌ Unverified"
 
+                # SUPABASE MEIN SAB SAVE KARO
                 result = {
                     "username": f"[{platform}] {clean_username}",
                     "platform": platform,
                     "scan_type": "Bot Check",
                     "result": result_text,
                     "country": claimed_country,
-                    "score": score # SCORE BHI SAVE KAR RAHA HU
+                    "score": score,
+                    "tweet_count": tweet_count,
+                    "account_age": account_age_days,
+                    "tweet_time": tweet_time,
+                    "tpd": tpd,
+                    "flags": ", ".join(reasons) if reasons else "None",
+                    "is_verified": is_verified
                 }
 
                 try:
@@ -263,6 +266,10 @@ with tab1:
                     st.subheader("📊 Bot Probability Meter")
                     st.progress(score/100)
                     st.metric("Bot Score", f"{score}%", delta=f"{'Danger' if score>=70 else 'Suspicious' if score>=50 else 'Safe'}", delta_color="inverse")
+
+                    # VASUKI RESULT MEIN VERIFIED DIKHAO - NAYA ADD KIYA
+                    st.write(f"*✔️ Verified Status:* {verified_text}")
+
                     if is_bot:
                         st.error(f"🚨 RESULT: {result_text}")
                         if st.session_state.admin and reasons:
@@ -274,7 +281,7 @@ with tab1:
                         st.success(f"💚 RESULT: {result_text}")
                         st.write("यह कमेंट या अकाउंट पूरी तरह से सुरक्षित और मानवीय लग रहा है.")
 
-                    # SABHI DESH KI TIMING DIKHAO - NAYA ADD KIYA
+                    # SABHI DESH KI TIMING DIKHAO
                     if tweet_time:
                         st.write("*🌍 World Timing Check:*")
                         world_times = get_world_timing(tweet_time)
@@ -292,10 +299,8 @@ with tab2:
 
     col1, col2 = st.columns(2)
     with col1:
-        # 195 COUNTRIES DROPDOWN - FIX
         claimed = st.selectbox("Claimed Country:", ALL_COUNTRIES, key="claimed_cc")
     with col2:
-        # 195 COUNTRIES DROPDOWN - FIX
         real_ip = st.selectbox("Real IP Country:", ALL_COUNTRIES, key="real_cc")
 
     username_cc = st.text_input("Username for reference:", placeholder="@username", key="cc_user")
@@ -313,7 +318,13 @@ with tab2:
                 "scan_type": "Country Check",
                 "result": f"❌ Mismatch: {claimed} vs {real_ip}",
                 "country": claimed,
-                "score": 100
+                "score": 100,
+                "tweet_count": 0,
+                "account_age": 0,
+                "tweet_time": "",
+                "tpd": 0,
+                "flags": f"Country Mismatch: {claimed} vs {real_ip}",
+                "is_verified": False
             }
             try:
                 supabase.table("scans").insert(result).execute()
@@ -324,7 +335,7 @@ with tab2:
             st.success(f"✅ Match! Dono country same hain: {claimed}")
             st.balloons()
 
-# इतिहास दिखाने के लिए साइडबार - CHHOTA BOX WALA - FIX KIYA
+# SIDEBAR - VERIFIED / UNVERIFIED DIKHEGA
 st.sidebar.header("📜 Live Scan History")
 try:
     scans = supabase.table("scans").select("*").order("created_at", desc=True).limit(10).execute()
@@ -333,9 +344,15 @@ try:
             is_bot = "Bot" in scan['result'] or "Mismatch" in scan['result']
             verdict_icon = "🤖 Bot" if is_bot else "✅ Human"
             score = scan.get('score', 0)
-            username_display = scan['username'].replace('[Twitter / X] ', '').replace('[CountryCheck] ', '')
+            username_display = scan['username'].replace('[Twitter / X] ', '').replace('[CountryCheck] ', '').replace('[Facebook] ', '').replace('[Instagram] ', '')
+            tpd = scan.get('tpd', 0)
+            account_age = scan.get('account_age', 0)
+            tweet_time = scan.get('tweet_time', 'N/A')
+            total_posts = scan.get('tweet_count', 0)
+            flags = scan.get('flags', 'None')
+            verified_text = "✅ Verified" if scan.get('is_verified', False) else "❌ Unverified" # YE NAYA
 
-            # TU JAISE BOLA WAISA BOX - VIEW REPORT BUTTON NAHI HAI
+            # CARD MEIN VERIFIED STATUS - NAYA ADD KIYA
             st.sidebar.markdown(f"""
             <div style="
                 background: #0f172a;
@@ -350,14 +367,16 @@ try:
                 <div style="font-weight: bold; margin-bottom: 4px; color: white;">
                     {username_display} {score}% {verdict_icon}
                 </div>
-                <div>📊 Platform: {scan.get('platform', 'N/A')}</div>
-                <div>📅 Score: {score}/100</div>
-                <div>⏰ Time: {scan['created_at'][11:16]}</div>
-                <div>📝 Country: {scan.get('country', 'N/A')}</div>
-                <div style="color: #64748b; font-size: 10px; margin-top: 4px;">
+                <div>📊 Tweets/Day: {tpd}</div>
+                <div>📅 Account Age: {account_age} days</div>
+                <div>⏰ Last Tweet: {tweet_time}</div>
+                <div>📝 Total Posts: {total_posts}</div>
+                <div>✔️ Verified: {verified_text}</div>
+                <div style="margin-top: 4px;">⚠️ Flags:</div>
+                <div style="font-size: 10px; color: #94a3b8;">• {flags.replace(', ', '<br>• ')}</div>
+                <div style="color: #64748b; font-size: 9px; margin-top: 4px;">
                     {scan['created_at'][:16].replace('T', ' ')}
                 </div>
-            </div>
             """, unsafe_allow_html=True)
     else:
         st.sidebar.info("No scans")
