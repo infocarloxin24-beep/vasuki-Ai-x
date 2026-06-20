@@ -142,6 +142,7 @@ def render_scan_card(username, platform, score, is_verified, tweet_count, accoun
     v_score, v_label = get_score_color_label(100 if is_verified else 0)
     posts_per_week = round(tweet_count / max(account_age_days/7, 1), 1)
 
+    # YAHAN FIX HAI - st.markdown + unsafe_allow_html=True
     st.markdown(f"""
     <style>
 .main-card {{ background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 24px; color: white; font-family: 'Segoe UI', sans-serif; margin-top: 20px; }}
@@ -365,9 +366,9 @@ with tab1:
             if st.button("⬅️ Back to New Scan"):
                 st.session_state.selected_scan_id = None
                 st.rerun()
-        st.stop()
 
     if st.button("🚀 Scan Karo"):
+        st.session_state.selected_scan_id = None # Naya scan karte hi purana clear
         if username or (scan_mode == "Manual - Khud bharo" and tweet_text):
             clean_username = username if username.startswith("@") or "http" in username else f"@{username}"
             if not username and tweet_text:
