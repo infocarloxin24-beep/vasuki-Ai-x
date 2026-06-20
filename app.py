@@ -10,20 +10,21 @@ import pytz
 import pycountry
 from bs4 import BeautifulSoup
 
+# SECRETS SE TOKEN LO
 ADMIN_PASS = st.secrets.get("ADMIN_PASS", "admin123")
 X_BEARER_TOKEN = st.secrets.get("X_BEARER_TOKEN")
 
 if 'admin' not in st.session_state:
     st.session_state.admin = False
-if 'selected_scan_id' not in st.session_state:
-    st.session_state.selected_scan_id = None
 
+# 195 COUNTRIES LIST - FIX
 def get_all_countries():
     countries_list = []
     for country in pycountry.countries:
         countries_list.append(country.name)
     return sorted(countries_list)
 
+# TIMEZONE WALE COUNTRIES - ALAG FUNCTION
 def get_countries_with_tz():
     countries = {}
     for country in pycountry.countries:
@@ -38,9 +39,10 @@ def get_countries_with_tz():
         except: pass
     return countries
 
-ALL_COUNTRIES = get_all_countries()
-COUNTRIES_TZ = get_countries_with_tz()
+ALL_COUNTRIES = get_all_countries() # 195 Countries
+COUNTRIES_TZ = get_countries_with_tz() # Timezone ke liye
 
+# X API + NITTER DONO - AUTOMATIC FALLBACK
 def fetch_x_data(username):
     username = username.replace("@", "").strip()
     if X_BEARER_TOKEN:
@@ -119,160 +121,40 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
         if st.session_state.admin: reasons.append("Copy-paste pattern - Bot signature")
     return min(score, 100), reasons
 
-def get_score_color_label(score):
-    if score >= 70: return "#4ade80", "Good"
-    elif score >= 40: return "#fbbf24", "Suspicious"
-    elif score > 0: return "#f87171", "Poor"
-    else: return "#64748b", "Not Verified"
+# SABHI DESH KI TIMING NIKALNE KA FUNCTION - NAYA ADD KIYA
+def get_world_timing(tweet_time_str):
+    if not tweet_time_str:
+        return []
+    try:
+        hour, minute = map(int, tweet_time_str.split(":"))
+        now = datetime.now()
+        input_dt = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
 
-def render_scan_card(username, platform, score, is_verified, tweet_count, account_age_days, scan_time):
-    verdict = "Likely Bot" if score >= 50 else "Human"
-    verdict_color = "#f87171" if score >= 50 else "#4ade80"
-    verdict_desc = "This account shows strong signs of automated behavior." if score >= 50 else "This account appears to be operated by a human."
+        countries_to_show = ["India", "United States", "United Kingdom", "Australia", "Japan", "Russia", "China", "Brazil", "United Arab Emirates", "Germany"]
+        result = []
 
-    u_score, u_label = get_score_color_label(40)
-    p_score, p_label = get_score_color_label(70)
-    a_score, a_label = get_score_color_label(30)
-    e_score, e_label = get_score_color_label(25)
-    b_score, b_label = get_score_color_label(45)
-    v_score, v_label = get_score_color_label(100 if is_verified else 0)
-    posts_per_week = round(tweet_count / max(account_age_days/7, 1), 1)
+        for country_name in countries_to_show:
+            try:
+                country = pycountry.countries.get(name=country_name)
+                if country:
+                    tz_list = pytz.country_timezones.get(country.alpha_2)
+                    if tz_list:
+                        tz = pytz.timezone(tz_list[0])
+                        # Assume input time is in IST for simplicity, convert to UTC then to target
+                        ist = pytz.timezone('Asia/Kolkata')
+                        local_dt = ist.localize(input_dt)
+                        utc_dt = local_dt.astimezone(pytz.utc)
+                        country_time = utc_dt.astimezone(tz)
 
-    # YE st.markdown HAI - st.code YA st.write NAHI HAI
-    st.markdown(f"""
-    <style>
-.main-card {{ background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 24px; color: white; font-family: 'Segoe UI', sans-serif; margin-top: 20px; }}
-.top-section {{ display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; margin-bottom: 20px; }}
-.profile-box {{ background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; display: flex; gap: 20px; }}
-.pfp-ring {{ width: 90px; height: 90px; background: linear-gradient(45deg, #ec4899, #8b5cf6, #3b82f6); padding: 3px; border-radius: 50%; animation: pulse 2s infinite; }}
-    @keyframes pulse {{ 0%, 100% {{ opacity: 1; }} 50% {{ opacity: 0.8; }} }}
-.pfp-ring img {{ width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #0b1220; }}
-.bot-score-box {{ background: #1a0b0b; border: 1px solid #3f1212; border-radius: 12px; padding: 20px; text-align: center; }}
-.bot-score-val {{ font-size: 56px; font-weight: 700; color: {verdict_color}; margin: 8px 0; line-height: 1; }}
-.progress-bar {{ width: 100%; height: 6px; background: #374151; border-radius: 3px; margin-top: 12px; }}
-.progress-fill {{ height: 100%; background: {verdict_color}; border-radius: 3px; width: {score}%; }}
-.metrics-grid {{ display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 16px; margin-bottom: 20px; }}
-.metric-item {{ text-align: center; }}
-.metric-bar {{ width: 100%; height: 4px; background: #374151; border-radius: 2px; margin: 8px 0; }}
-.metric-fill {{ height: 100%; border-radius: 2px; }}
-.bottom-section {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }}
-.info-box {{ background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; }}
-.summary-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #1e293b; }}
-.recommend-box {{ background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; }}
-.footer-box {{ background: #064e3b; border: 1px solid #059669; border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; }}
-    </style>
+                        flag = "🌙" if 0 <= country_time.hour <= 6 else "☀️"
+                        result.append(f"{country_name}: {country_time.strftime('%H:%M')} {flag}")
+            except:
+                pass
+        return result
+    except:
+        return []
 
-    <div class="main-card">
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-            <div>
-                <h2 style="margin:0;">Scan Result</h2>
-                <p style="margin:0; color:#94a3b8; font-size:14px;">Completed on {scan_time}</p>
-            </div>
-        </div>
-
-        <div class="top-section">
-            <div class="profile-box">
-                <div class="pfp-ring">
-                    <img src="https://ui-avatars.com/api/?name={username.replace('@','')}&background=8b5cf6&color=fff">
-                </div>
-                <div style="flex:1;">
-                    <h3 style="margin:0 0 8px 0;">{username} {'<i class="fas fa-check-circle" style="color:#38bdf8;"></i>' if is_verified else ''}</h3>
-                    <div style="background:#1e293b; padding:4px 10px; border-radius:6px; display:inline-block; margin-bottom:12px; font-size:13px;">
-                        <i class="fab fa-instagram"></i> {platform}
-                    </div>
-                    <p style="margin:4px 0; color:#94a3b8; font-size:14px;"><i class="fas fa-user"></i> Username: {username}</p>
-                    <p style="margin:4px 0; color:#94a3b8; font-size:14px;"><i class="fas fa-globe"></i> Platform: {platform}</p>
-                    <p style="margin:4px 0; color:#94a3b8; font-size:14px;"><i class="fas fa-clock"></i> Scanned At: {scan_time}</p>
-                </div>
-            </div>
-
-            <div class="bot-score-box">
-                <p style="margin:0; color:#94a3b8; font-size:14px;"><i class="fas fa-robot"></i> Bot Score</p>
-                <h1 class="bot-score-val">{score}%</h1>
-                <p style="margin:0; color:{verdict_color}; font-weight:600;">{verdict}</p>
-                <div class="progress-bar"><div class="progress-fill"></div></div>
-                <p style="margin:12px 0 0 0; color:#94a3b8; font-size:12px;">{verdict_desc}</p>
-            </div>
-        </div>
-
-        <div class="metrics-grid">
-            <div class="metric-item">
-                <p style="margin:0; color:#a78bfa; font-size:12px;"><i class="fas fa-user" style="color:{u_score};"></i> Username</p>
-                <h3 style="margin:4px 0; color:{u_score}; font-size:28px;">40<span style="color:#64748b; font-size:16px;">/100</span></h3>
-                <div class="metric-bar"><div class="metric-fill" style="width:40%; background:{u_score};"></div></div>
-                <p style="margin:0; color:{u_score}; font-size:12px;">{u_label}</p>
-            </div>
-            <div class="metric-item">
-                <p style="margin:0; color:#60a5fa; font-size:12px;"><i class="fas fa-id-card" style="color:{p_score};"></i> Profile Complete</p>
-                <h3 style="margin:4px 0; color:{p_score}; font-size:28px;">70<span style="color:#64748b; font-size:16px;">/100</span></h3>
-                <div class="metric-bar"><div class="metric-fill" style="width:70%; background:{p_score};"></div></div>
-                <p style="margin:0; color:{p_score}; font-size:12px;">{p_label}</p>
-            </div>
-            <div class="metric-item">
-                <p style="margin:0; color:#fbbf24; font-size:12px;"><i class="fas fa-chart-line" style="color:{a_score};"></i> Activity Pattern</p>
-                <h3 style="margin:4px 0; color:{a_score}; font-size:28px;">30<span style="color:#64748b; font-size:16px;">/100</span></h3>
-                <div class="metric-bar"><div class="metric-fill" style="width:30%; background:{a_score};"></div></div>
-                <p style="margin:0; color:{a_score}; font-size:12px;">{a_label}</p>
-            </div>
-            <div class="metric-item">
-                <p style="margin:0; color:#4ade80; font-size:12px;"><i class="fas fa-users" style="color:{e_score};"></i> Engagement Quality</p>
-                <h3 style="margin:4px 0; color:{e_score}; font-size:28px;">25<span style="color:#64748b; font-size:16px;">/100</span></h3>
-                <div class="metric-bar"><div class="metric-fill" style="width:25%; background:{e_score};"></div></div>
-                <p style="margin:0; color:{e_score}; font-size:12px;">{e_label}</p>
-            </div>
-            <div class="metric-item">
-                <p style="margin:0; color:#f87171; font-size:12px;"><i class="fas fa-file-lines" style="color:{b_score};"></i> Bio Analysis</p>
-                <h3 style="margin:4px 0; color:{b_score}; font-size:28px;">45<span style="color:#64748b; font-size:16px;">/100</span></h3>
-                <div class="metric-bar"><div class="metric-fill" style="width:45%; background:{b_score};"></div></div>
-                <p style="margin:0; color:{b_score}; font-size:12px;">{b_label}</p>
-            </div>
-            <div class="metric-item">
-                <p style="margin:0; color:#60a5fa; font-size:12px;"><i class="fas fa-shield-halved" style="color:{v_score};"></i> Verification</p>
-                <h3 style="margin:4px 0; color:{v_score}; font-size:28px;">{100 if is_verified else 0}<span style="color:#64748b; font-size:16px;">/100</span></h3>
-                <div class="metric-bar"><div class="metric-fill" style="width:{100 if is_verified else 0}%; background:{v_score};"></div></div>
-                <p style="margin:0; color:{v_score}; font-size:12px;">{v_label}</p>
-            </div>
-        </div>
-
-        <div class="bottom-section">
-            <div class="info-box">
-                <h4 style="margin:0 0 12px 0;"><i class="fas fa-brain" style="color:#a78bfa;"></i> AI Explanation</h4>
-                <p style="margin:0 0 16px 0; color:#94a3b8; font-size:13px;">Our AI has analyzed multiple signals from this account and calculated the probability of this account being a bot.</p>
-                <div style="border-top:1px solid #1e293b; padding-top:12px;">
-                    <p style="margin:8px 0; font-size:13px;"><i class="fas fa-circle-xmark" style="color:#f87171;"></i> <b>Username Pattern</b><br><span style="color:#94a3b8;">Username contains suspicious pattern or uncommon characters.</span></p>
-                    <p style="margin:8px 0; font-size:13px;"><i class="fas fa-triangle-exclamation" style="color:#fbbf24;"></i> <b>Low Engagement</b><br><span style="color:#94a3b8;">Very low likes, comments or interactions compared to follower count.</span></p>
-                    <p style="margin:8px 0; font-size:13px;"><i class="fas fa-circle-xmark" style="color:{verdict_color};"></i> <b>Posting Behavior</b><br><span style="color:#94a3b8;">{int(tweet_count/max(account_age_days,1))} posts/day - {"Irregular pattern" if tweet_count/max(account_age_days,1) > 20 else "Normal pattern"}.</span></p>
-                </div>
-            </div>
-
-            <div>
-                <div class="info-box" style="margin-bottom:20px;">
-                    <h4 style="margin:0 0 12px 0;"><i class="fas fa-file-lines" style="color:#60a5fa;"></i> Account Summary</h4>
-                    <div class="summary-row"><span><i class="fas fa-users"></i> Followers</span><span>12.4K</span></div>
-                    <div class="summary-row"><span><i class="fas fa-user-plus"></i> Following</span><span>7,892</span></div>
-                    <div class="summary-row"><span><i class="fas fa-image"></i> Total Posts</span><span>{tweet_count}</span></div>
-                    <div class="summary-row"><span><i class="fas fa-calendar"></i> Account Created</span><span>{account_age_days} Days Ago</span></div>
-                    <div class="summary-row"><span><i class="fas fa-chart-column"></i> Avg. Posts/Week</span><span>{posts_per_week}</span></div>
-                    <div class="summary-row" style="border:none;"><span><i class="fas fa-eye"></i> Profile Type</span><span>Public</span></div>
-                </div>
-
-                <div class="recommend-box">
-                    <h4 style="margin:0 0 12px 0;"><i class="fas fa-shield-halved" style="color:#60a5fa;"></i> Our Recommendation</h4>
-                    <p style="margin:0; font-size:14px;">This account is <span style="color:{verdict_color}; font-weight:600;">{verdict}</span>.</p>
-                    <p style="margin:8px 0 0 0; color:#94a3b8; font-size:13px;">Proceed with caution while interacting with this account.</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="footer-box">
-            <div>
-                <p style="margin:0; font-weight:600;"><i class="fas fa-circle-check" style="color:#4ade80;"></i> Scan Completed Successfully</p>
-                <p style="margin:0; color:#94a3b8; font-size:13px;">This report is generated by Vasuki AI 4.0 - Bot Detector</p>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
+# Supabase connection
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
@@ -280,8 +162,6 @@ supabase: Client = create_client(url, key)
 st.set_page_config(page_title="Vasuki Ai 4.0 - Bot Detector", page_icon="🐍", layout="wide")
 st.title("🐍 Vasuki Ai 4.0 - Universal Bot Detector")
 st.caption("Multi-Platform Account & Text Scanner | Powered by AI")
-
-st.markdown('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">', unsafe_allow_html=True)
 
 with st.sidebar:
     if not st.session_state.admin:
@@ -337,78 +217,74 @@ with tab1:
             account_age_days = st.number_input("Account Age (Days)", 0, value=0)
             tweet_time = st.text_input("Last Tweet Time (HH:MM)", "14:30")
 
+        # 195 COUNTRIES DROPDOWN - FIX
         claimed_country = st.selectbox("Claimed Country", ALL_COUNTRIES, key="claimed_country")
         ip_country = st.selectbox("Real IP Country", ALL_COUNTRIES, key="ip_country")
 
-    # VIEW REPORT KA LOGIC - SABSE UPAR RAKHA - NO st.stop()
-    show_old_report = False
-    if st.session_state.selected_scan_id:
-        scan_data = supabase.table("scans").select("*").eq("id", st.session_state.selected_scan_id).execute()
-        if scan_data.data:
-            scan = scan_data.data[0]
-            st.info("📄 Viewing saved report")
-            render_scan_card(
-                username=scan['username'],
-                platform=scan['platform'],
-                score=scan.get('score', 0),
-                is_verified=False,
-                tweet_count=0,
-                account_age_days=0,
-                scan_time=scan['created_at'][:19].replace('T', ' ')
-            )
-            if st.button("⬅️ Back to New Scan"):
-                st.session_state.selected_scan_id = None
-                st.rerun()
-            show_old_report = True
+    if st.button("🚀 Scan Karo"):
+        if username or (scan_mode == "Manual - Khud bharo" and tweet_text):
+            clean_username = username if username.startswith("@") or "http" in username else f"@{username}"
+            if not username and tweet_text:
+                clean_username = "Anonymous Text"
 
-    # NAYA SCAN - JAB TAK PURANA REPORT NAHI DIKH RAHA
-    if not show_old_report:
-        if st.button("🚀 Scan Karo"):
-            st.session_state.selected_scan_id = None
-            if username or (scan_mode == "Manual - Khud bharo" and tweet_text):
-                clean_username = username if username.startswith("@") or "http" in username else f"@{username}"
-                if not username and tweet_text:
-                    clean_username = "Anonymous Text"
+            with st.spinner(f"Vasuki Ai Brain Scanning {platform} data... 🧠"):
+                if scan_mode == "Auto - X API/Nitter se data lao" and platform == "Twitter / X":
+                    x_data = fetch_x_data(clean_username)
+                    if x_data:
+                        bio = x_data.get('bio', '')
+                        is_verified = x_data.get('is_verified', False)
+                        tweet_count = int(x_data.get('tweet_count', 0)) if str(x_data.get('tweet_count', 0)).isdigit() else 0
+                        account_age_days = x_data.get('account_age', 0)
+                        st.success("✅ X API/Nitter se data mil gaya")
+                    else:
+                        st.warning("⚠️ Data nahi mila. Manual mode use karo.")
 
-                with st.spinner(f"Vasuki Ai Brain Scanning {platform} data... 🧠"):
-                    if scan_mode == "Auto - X API/Nitter se data lao" and platform == "Twitter / X":
-                        x_data = fetch_x_data(clean_username)
-                        if x_data:
-                            bio = x_data.get('bio', '')
-                            is_verified = x_data.get('is_verified', False)
-                            tweet_count = int(x_data.get('tweet_count', 0)) if str(x_data.get('tweet_count', 0)).isdigit() else 0
-                            account_age_days = x_data.get('account_age', 0)
-                            st.success("✅ X API/Nitter se data mil gaya")
-                        else:
-                            st.warning("⚠️ Data nahi mila. Manual mode use karo.")
+                score, reasons = check_bot_score_gupt(
+                    username=clean_username, bio=bio, is_verified=is_verified, tweet_count=tweet_count,
+                    account_age=account_age_days, tweet_time=tweet_time, ip_country=ip_country,
+                    claimed_country=claimed_country, tweet_text=tweet_text
+                )
 
-                    score, reasons = check_bot_score_gupt(
-                        username=clean_username, bio=bio, is_verified=is_verified, tweet_count=tweet_count,
-                        account_age=account_age_days, tweet_time=tweet_time, ip_country=ip_country,
-                        claimed_country=claimed_country, tweet_text=tweet_text
-                    )
+                is_bot = score >= 50
+                result_text = f"🤖 {platform} Bot - {score}% Match" if is_bot else f"✅ Human - {100-score}% Safe"
 
-                    is_bot = score >= 50
-                    result_text = f"🤖 {platform} Bot - {score}% Match" if is_bot else f"✅ Human - {100-score}% Safe"
+                result = {
+                    "username": f"[{platform}] {clean_username}",
+                    "platform": platform,
+                    "scan_type": "Bot Check",
+                    "result": result_text,
+                    "country": claimed_country,
+                    "score": score # SCORE BHI SAVE KAR RAHA HU
+                }
 
-                    result = {
-                        "username": f"[{platform}] {clean_username}",
-                        "platform": platform,
-                        "scan_type": "Bot Check",
-                        "result": result_text,
-                        "country": claimed_country,
-                        "score": score
-                    }
+                try:
+                    supabase.table("scans").insert(result).execute()
+                    st.success("🎉 Scan Complete!")
+                    st.subheader("📊 Bot Probability Meter")
+                    st.progress(score/100)
+                    st.metric("Bot Score", f"{score}%", delta=f"{'Danger' if score>=70 else 'Suspicious' if score>=50 else 'Safe'}", delta_color="inverse")
+                    if is_bot:
+                        st.error(f"🚨 RESULT: {result_text}")
+                        if st.session_state.admin and reasons:
+                            st.warning("Pakde Jaane Ke Karan:")
+                            for reason in reasons:
+                                st.write(f"• {reason}")
+                        st.warning(f"Action Recommended: {platform} par is account ko report/block karein.")
+                    else:
+                        st.success(f"💚 RESULT: {result_text}")
+                        st.write("यह कमेंट या अकाउंट पूरी तरह से सुरक्षित और मानवीय लग रहा है.")
 
-                    try:
-                        supabase.table("scans").insert(result).execute()
-                        scan_time = datetime.now().strftime("%d %b %Y, %I:%M %p")
-                        render_scan_card(clean_username, platform, score, is_verified, tweet_count, account_age_days, scan_time)
+                    # SABHI DESH KI TIMING DIKHAO - NAYA ADD KIYA
+                    if tweet_time:
+                        st.write("*🌍 World Timing Check:*")
+                        world_times = get_world_timing(tweet_time)
+                        for wt in world_times:
+                            st.write(f"• {wt}")
 
-                    except Exception as e:
-                        st.error(f"Supabase Error: {e}")
-            else:
-                st.warning("⚠️ Scan karne ke liye Username ya Text daalna zaroori hai bhai!")
+                except Exception as e:
+                    st.error(f"Supabase Error: {e}")
+        else:
+            st.warning("⚠️ Scan karne ke liye Username ya Text daalna zaroori hai bhai!")
 
 with tab2:
     st.subheader("🌍 Country Mismatch Detector")
@@ -416,8 +292,10 @@ with tab2:
 
     col1, col2 = st.columns(2)
     with col1:
+        # 195 COUNTRIES DROPDOWN - FIX
         claimed = st.selectbox("Claimed Country:", ALL_COUNTRIES, key="claimed_cc")
     with col2:
+        # 195 COUNTRIES DROPDOWN - FIX
         real_ip = st.selectbox("Real IP Country:", ALL_COUNTRIES, key="real_cc")
 
     username_cc = st.text_input("Username for reference:", placeholder="@username", key="cc_user")
@@ -435,7 +313,7 @@ with tab2:
                 "scan_type": "Country Check",
                 "result": f"❌ Mismatch: {claimed} vs {real_ip}",
                 "country": claimed,
-                "score": 0
+                "score": 100
             }
             try:
                 supabase.table("scans").insert(result).execute()
@@ -446,35 +324,47 @@ with tab2:
             st.success(f"✅ Match! Dono country same hain: {claimed}")
             st.balloons()
 
+# इतिहास दिखाने के लिए साइडबार - CHHOTA BOX WALA - FIX KIYA
 st.sidebar.header("📜 Live Scan History")
 try:
     scans = supabase.table("scans").select("*").order("created_at", desc=True).limit(10).execute()
     if scans.data:
         for scan in scans.data:
             is_bot = "Bot" in scan['result'] or "Mismatch" in scan['result']
+            verdict_icon = "🤖 Bot" if is_bot else "✅ Human"
             score = scan.get('score', 0)
-            color = "#f87171" if is_bot else "#4ade80"
-            icon = "🔴" if is_bot else "🟢"
+            username_display = scan['username'].replace('[Twitter / X] ', '').replace('[CountryCheck] ', '')
 
+            # TU JAISE BOLA WAISA BOX - VIEW REPORT BUTTON NAHI HAI
             st.sidebar.markdown(f"""
-            <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 12px; margin-bottom: 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span style="font-size: 13px; font-weight: 600; color: white;">{icon} {scan['username'][:20]}...</span>
-                    <span style="background: {color}; color: white; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">{score}%</span>
+            <div style="
+                background: #0f172a;
+                border: 1px solid #1e293b;
+                border-radius: 8px;
+                padding: 8px;
+                margin-bottom: 8px;
+                font-size: 11px;
+                line-height: 1.4;
+                color: #e2e8f0;
+            ">
+                <div style="font-weight: bold; margin-bottom: 4px; color: white;">
+                    {username_display} {score}% {verdict_icon}
                 </div>
-                <p style="margin: 0 0 8px 0; font-size: 12px; color: #94a3b8;">{scan['result'][:30]}...</p>
-                <p style="margin: 0 0 8px 0; font-size: 11px; color: #64748b;">⏱️ {scan['created_at'][:19].replace('T', ' ')}</p>
+                <div>📊 Platform: {scan.get('platform', 'N/A')}</div>
+                <div>📅 Score: {score}/100</div>
+                <div>⏰ Time: {scan['created_at'][11:16]}</div>
+                <div>📝 Country: {scan.get('country', 'N/A')}</div>
+                <div style="color: #64748b; font-size: 10px; margin-top: 4px;">
+                    {scan['created_at'][:16].replace('T', ' ')}
+                </div>
             </div>
             """, unsafe_allow_html=True)
-
-            if st.sidebar.button("📄 View Report", key=f"view_{scan['id']}", use_container_width=True):
-                st.session_state.selected_scan_id = scan['id']
-                st.rerun()
     else:
-        st.sidebar.info("No scans yet")
+        st.sidebar.info("No scans")
 except Exception as e:
     st.sidebar.error(f"History load nahi hui: {str(e)[:50]}")
 
+# EXTRA ADD - Instructions + System Status + Quick Stats
 st.markdown("---")
 col_left, col_right = st.columns([2, 1])
 
@@ -507,6 +397,7 @@ with col_right:
     except:
         st.metric("Total Scans", "N/A")
 
+# Footer with Tiranga
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #666;'>🐍 Vasuki Ai 4.0 - Bot Detector | Built by Nishad Singh 🇮🇳 | Made in Bharat</div>",
