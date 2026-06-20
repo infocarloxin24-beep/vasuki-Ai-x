@@ -236,7 +236,7 @@ with tab1:
                 try:
                     supabase.table("scans").insert(result).execute()
 
-                    # ===== YAHAN SE PURANA CARD HATA KE NAYA CARD DALA HAI =====
+                    # ===== AB YE 100% RENDER HOGA - unsafe_allow_html=True lagaya =====
                     verdict = "Likely Bot" if score >= 50 else "Human"
                     verdict_color = "#f87171" if score >= 50 else "#4ade80"
                     verdict_desc = "This account shows strong signs of automated behavior." if score >= 50 else "This account appears to be operated by a human."
@@ -247,32 +247,32 @@ with tab1:
                     a_score, a_label = get_score_color_label(30)
                     e_score, e_label = get_score_color_label(25)
                     b_score, b_label = get_score_color_label(45)
-                    v_score, v_label = get_score_color_label(0 if not is_verified else 100)
+                    v_score, v_label = get_score_color_label(100 if is_verified else 0)
 
                     scan_time = datetime.now().strftime("%d %b %Y, %I:%M %p")
                     posts_per_week = round(tweet_count / max(account_age_days/7, 1), 1)
 
                     st.markdown(f"""
                     <style>
-                  .main-card {{ background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 24px; color: white; font-family: 'Segoe UI', sans-serif; margin-top: 20px; }}
-                  .top-section {{ display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; margin-bottom: 20px; }}
-                  .profile-box {{ background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; display: flex; gap: 20px; }}
-                  .pfp-ring {{ width: 90px; height: 90px; background: linear-gradient(45deg, #ec4899, #8b5cf6, #3b82f6); padding: 3px; border-radius: 50%; animation: pulse 2s infinite; }}
+                .main-card {{ background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 24px; color: white; font-family: 'Segoe UI', sans-serif; margin-top: 20px; }}
+                .top-section {{ display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; margin-bottom: 20px; }}
+                .profile-box {{ background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; display: flex; gap: 20px; }}
+                .pfp-ring {{ width: 90px; height: 90px; background: linear-gradient(45deg, #ec4899, #8b5cf6, #3b82f6); padding: 3px; border-radius: 50%; animation: pulse 2s infinite; }}
                     @keyframes pulse {{ 0%, 100% {{ opacity: 1; }} 50% {{ opacity: 0.8; }} }}
-                  .pfp-ring img {{ width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #0b1220; }}
-                  .bot-score-box {{ background: #1a0b0b; border: 1px solid #3f1212; border-radius: 12px; padding: 20px; text-align: center; }}
-                  .bot-score-val {{ font-size: 56px; font-weight: 700; color: {verdict_color}; margin: 8px 0; line-height: 1; }}
-                  .progress-bar {{ width: 100%; height: 6px; background: #374151; border-radius: 3px; margin-top: 12px; }}
-                  .progress-fill {{ height: 100%; background: {verdict_color}; border-radius: 3px; width: {score}%; }}
-                  .metrics-grid {{ display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 16px; margin-bottom: 20px; }}
-                  .metric-item {{ text-align: center; }}
-                  .metric-bar {{ width: 100%; height: 4px; background: #374151; border-radius: 2px; margin: 8px 0; }}
-                  .metric-fill {{ height: 100%; border-radius: 2px; }}
-                  .bottom-section {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }}
-                  .info-box {{ background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; }}
-                  .summary-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #1e293b; }}
-                  .recommend-box {{ background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; }}
-                  .footer-box {{ background: #064e3b; border: 1px solid #059669; border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; }}
+                .pfp-ring img {{ width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #0b1220; }}
+                .bot-score-box {{ background: #1a0b0b; border: 1px solid #3f1212; border-radius: 12px; padding: 20px; text-align: center; }}
+                .bot-score-val {{ font-size: 56px; font-weight: 700; color: {verdict_color}; margin: 8px 0; line-height: 1; }}
+                .progress-bar {{ width: 100%; height: 6px; background: #374151; border-radius: 3px; margin-top: 12px; }}
+                .progress-fill {{ height: 100%; background: {verdict_color}; border-radius: 3px; width: {score}%; }}
+                .metrics-grid {{ display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 16px; margin-bottom: 20px; }}
+                .metric-item {{ text-align: center; }}
+                .metric-bar {{ width: 100%; height: 4px; background: #374151; border-radius: 2px; margin: 8px 0; }}
+                .metric-fill {{ height: 100%; border-radius: 2px; }}
+                .bottom-section {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }}
+                .info-box {{ background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; }}
+                .summary-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #1e293b; }}
+                .recommend-box {{ background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; }}
+                .footer-box {{ background: #064e3b; border: 1px solid #059669; border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; }}
                     </style>
 
                     <div class="main-card">
@@ -385,7 +385,7 @@ with tab1:
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
-                    # ===== NAYA CARD KHATAM =====
+                    # ===== CARD KHATAM =====
 
                 except Exception as e:
                     st.error(f"Supabase Error: {e}")
@@ -439,7 +439,7 @@ try:
             score = scan.get('score', 0)
             color = "#f87171" if is_bot else "#4ade80"
             icon = "🔴" if is_bot else "🟢"
-            
+
             # Chota Card HTML
             st.sidebar.markdown(f"""
             <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 12px; margin-bottom: 10px;">
@@ -451,7 +451,7 @@ try:
                 <p style="margin: 0 0 8px 0; font-size: 11px; color: #64748b;">⏱️ {scan['created_at'][:19].replace('T', ' ')}</p>
             </div>
             """, unsafe_allow_html=True)
-            
+
             # View Report Button
             if st.sidebar.button("📄 View Report", key=f"view_{scan['id']}", use_container_width=True):
                 st.session_state.selected_scan = scan['id']
