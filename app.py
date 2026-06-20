@@ -24,23 +24,33 @@ def get_all_countries():
         countries_list.append(country.name)
     return sorted(countries_list)
 
-# TIMEZONE WALE COUNTRIES - ALAG FUNCTION
+# TIMEZONE WALE COUNTRIES - FLAG + UTC KE SAATH
 def get_countries_with_tz():
     countries = {}
     for country in pycountry.countries:
         try:
             tz_list = pytz.country_timezones.get(country.alpha_2)
             if tz_list:
-                countries[country.name.lower()] = {
-                    "flag": country.flag,
+                tz = pytz.timezone(tz_list[0])
+                offset = datetime.now(tz).strftime('%z')
+                offset = f"{offset[:3]}:{offset[3:]}" # +0530 -> +05:30
+                countries[country.name] = {
+                    "flag": country.flag if hasattr(country, 'flag') else "🏳️",
                     "tz": tz_list[0],
-                    "code": country.alpha_2
+                    "code": country.alpha_2,
+                    "utc": offset
                 }
         except: pass
     return countries
 
-ALL_COUNTRIES = get_all_countries() # 195 Countries
-COUNTRIES_TZ = get_countries_with_tz() # Timezone ke liye
+ALL_COUNTRIES = get_all_countries()
+COUNTRIES_TZ = get_countries_with_tz()
+
+# DROPDOWN KE LIYE DISPLAY LIST BANADO
+COUNTRY_DISPLAY_LIST = []
+for name, data in sorted(COUNTRIES_TZ.items()):
+    tz_abbr = data['tz'].split('/')[-1].replace('_', ' ')
+    COUNTRY_DISPLAY_LIST.append(f"{data['flag']} {name} ({tz_abbr}) UTC{data['utc']}")
 
 # X API + NITTER DONO - AUTOMATIC FALLBACK
 def fetch_x_data(username):
@@ -76,9 +86,9 @@ def fetch_x_data(username):
     except: return None
     return None
 
-# ✅ FIXED FUNCTION - THRESHOLD 40, COUNTRY +60, TIME FIX
+# ✅ UPDATED FUNCTION - USER COUNTRY TIMEZONE SE CONVERT
 def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, account_age=0,
-                         tweet_time="", ip_country="", claimed_country="", tweet_text=""):
+                         tweet_time="", user_view_country="", claimed_country="", tweet_text=""):
     score = 0
     reasons = []
     tpd = tweet_count / max(account_age, 1)
@@ -101,28 +111,38 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
         score += 20
         if st.session_state.admin: reasons.append("Fake/Bot jaisa username")
 
-    # ✅ TIME CHECK FIXED - IST to Claimed Country convert
-    if tweet_time and claimed_country and claimed_country.lower() in COUNTRIES_TZ:
+    # ✅ TIME CHECK - USER KE COUNTRY SE IST MEIN CONVERT
+    if tweet_time and user_view_country and claimed_country:
         try:
             tweet_hour, tweet_min = map(int, tweet_time.split(":"))
-            country_tz_str = COUNTRIES_TZ[claimed_country.lower()]["tz"]
-            country_tz = pytz.timezone(country_tz_str)
 
-            ist = pytz.timezone('Asia/Kolkata')
-            today = datetime.now(ist).date()
-            ist_dt = ist.localize(datetime(today.year, today.month, today.day, tweet_hour, tweet_min))
-            country_dt = ist_dt.astimezone(country_tz)
-            country_hour = country_dt.hour
+            # User jis country se dekh raha hai uska timezone
+            user_country_name = user_view_country.split(' ')[1] # Flag hatao
+            if user_country_name in COUNTRIES_TZ:
+                user_tz_str = COUNTRIES_TZ[user_country_name]["tz"]
+                user_tz = pytz.timezone(user_tz_str)
 
-            if 0 <= country_hour <= 6:
-                score += 15
-                if st.session_state.admin: reasons.append(f"{claimed_country} me raat {country_hour}:00 baje tweet - Suspicious")
+                # Claimed country ka timezone
+                claimed_tz_str = COUNTRIES_TZ[claimed_country]["tz"]
+                claimed_tz = pytz.timezone(claimed_tz_str)
+
+                # User ka time → UTC → Claimed country ka time
+                today = datetime.now().date()
+                user_dt = user_tz.localize(datetime(today.year, today.month, today.day, tweet_hour, tweet_min))
+                claimed_dt = user_dt.astimezone(claimed_tz)
+                country_hour = claimed_dt.hour
+
+                if 0 <= country_hour <= 6:
+                    score += 15
+                    if st.session_state.admin: reasons.append(f"{claimed_country} me raat {country_hour}:00 baje tweet - Suspicious")
         except: pass
 
-    # ✅ COUNTRY MISMATCH = +60 SCORE AB
-    if ip_country and claimed_country and ip_country.lower()!= claimed_country.lower():
-        score += 60 # 20 se badha ke 60
-        if st.session_state.admin: reasons.append(f"Country Mismatch: {claimed_country} vs {ip_country} - High Risk")
+    # ✅ COUNTRY MISMATCH = +60 SCORE
+    if user_view_country and claimed_country:
+        user_country_name = user_view_country.split(' ')[1]
+        if user_country_name.lower()!= claimed_country.lower():
+            score += 60
+            if st.session_state.admin: reasons.append(f"Country Mismatch: {claimed_country} vs {user_country_name} - High Risk")
 
     if is_verified and numbers >= 4:
         score += 30
@@ -149,7 +169,7 @@ def get_world_timing_grid_195(tweet_time_str):
             try:
                 tz_list = pytz.country_timezones.get(country.alpha_2)
                 if tz_list:
-                    tz = pytz.timezone(tz_list[0]) # Pehla timezone le lo
+                    tz = pytz.timezone(tz_list[0])
                     ist = pytz.timezone('Asia/Kolkata')
                     local_dt = ist.localize(input_dt)
                     utc_dt = local_dt.astimezone(pytz.utc)
@@ -163,7 +183,6 @@ def get_world_timing_grid_195(tweet_time_str):
                         "flag": country.flag if hasattr(country, 'flag') else "🏳️"
                     })
             except: pass
-        # Name se sort kar do
         result = sorted(result, key=lambda x: x["name"])
         return result
     except: return []
@@ -177,8 +196,7 @@ st.set_page_config(page_title="Vasuki Ai 4.0 - Bot Detector", page_icon="🐍", 
 st.title("🐍 Vasuki Ai 4.0 - Universal Bot Detector")
 st.caption("Multi-Platform Account & Text Scanner | Powered by AI")
 
-# HEADER MEIN ADD KARO - TITLE KE NEECHE
-st.info("⚠️ *Disclaimer:* This tool provides an AI-assisted probability estimate and should not be treated as definitive proof.")
+st.info("⚠️ Disclaimer: This tool provides an AI-assisted probability estimate and should not be treated as definitive proof.")
 
 with st.sidebar:
     if not st.session_state.admin:
@@ -212,7 +230,7 @@ with tab1:
     tweet_count = 0
     account_age_days = 0
     claimed_country = ""
-    ip_country = ""
+    user_view_country = ""
     tweet_time = ""
     tweet_text = ""
     bio = ""
@@ -233,9 +251,21 @@ with tab1:
             tweet_count = st.number_input("Total Tweets/Posts", 0, value=0)
         with col2:
             account_age_days = st.number_input("Account Age (Days)", 0, value=0)
-            tweet_time = st.text_input("Last Tweet Time (HH:MM)", "14:30")
 
-        claimed_country = st.selectbox("Claimed Country", ALL_COUNTRIES, key="claimed_country")
+        # ✅ NAYA TIME + COUNTRY SELECTOR - FLAG KE SAATH
+        st.markdown("*📍 Tweet Timing Details:*")
+        col3, col4 = st.columns([1,2])
+        with col3:
+            tweet_time = st.text_input("Tweet ka time jo dikh raha hai (HH:MM)", "14:30")
+        with col4:
+            user_view_country = st.selectbox(
+                "Aap kis country se tweet dekh rahe ho?",
+                COUNTRY_DISPLAY_LIST,
+                index=0,
+                help="Jo time aapne daala hai wo kis country ka time hai?"
+            )
+
+        claimed_country = st.selectbox("Claimed Country (User ne bio mein kya likha hai)", ALL_COUNTRIES, key="claimed_country")
         ip_country = st.selectbox("Real IP Country", ALL_COUNTRIES, key="ip_country")
 
     if st.button("🚀 Scan Karo"):
@@ -258,17 +288,15 @@ with tab1:
 
                 score, reasons = check_bot_score_gupt(
                     username=clean_username, bio=bio, is_verified=is_verified, tweet_count=tweet_count,
-                    account_age=account_age_days, tweet_time=tweet_time, ip_country=ip_country,
+                    account_age=account_age_days, tweet_time=tweet_time, user_view_country=user_view_country,
                     claimed_country=claimed_country, tweet_text=tweet_text
                 )
 
-                # ✅ THRESHOLD 40 KAR DIYA
                 is_bot = score >= 40
                 result_text = f"🤖 {platform} Bot - {score}% Match" if is_bot else f"✅ Human - {100-score}% Safe"
                 tpd = int(tweet_count / max(account_age_days, 1))
                 verified_text = "✅ Verified" if is_verified else "❌ Unverified"
 
-                # SUPABASE MEIN SAB SAVE KARO
                 result = {
                     "username": f"[{platform}] {clean_username}",
                     "platform": platform,
@@ -289,11 +317,8 @@ with tab1:
                     st.success("🎉 Scan Complete!")
                     st.subheader("📊 Bot Probability Meter")
                     st.progress(score/100)
-                    # ✅ METRIC DELTA BHI 40 KAR DIYA
                     st.metric("Bot Score", f"{score}%", delta=f"{'Danger' if score>=70 else 'Suspicious' if score>=40 else 'Safe'}", delta_color="inverse")
-
-                    # VERIFIED STATUS - DOUBLE ICON FIX KIYA
-                    st.write(f"*Verified Status:* {verified_text}")
+                    st.write(f"Verified Status: {verified_text}")
 
                     if is_bot:
                         st.error(f"🚨 RESULT: {result_text}")
@@ -306,21 +331,15 @@ with tab1:
                         st.success(f"💚 RESULT: {result_text}")
                         st.write("यह कमेंट या अकाउंट पूरी तरह से सुरक्षित और मानवीय लग रहा है.")
 
-                    # 195 COUNTRY KA COMPACT DASHBOARD
                     if tweet_time:
-                        st.write("*🌍 World Timing Dashboard - 195 Countries*")
+                        st.write("🌍 World Timing Dashboard - 195 Countries")
                         st.caption("🌙 = Raat 12-6 baje | ☀️ = Din ka time | Red Border = Raat | Green Border = Din")
-
                         world_times = get_world_timing_grid_195(tweet_time)
-
-                        # Expander mein daal diya taki UI clean rahe
                         with st.expander(f"📊 Show All 195 Countries Timing", expanded=False):
-                            # 6 COLUMNS MEIN GRID - COMPACT
                             cols = st.columns(6)
                             for idx, country in enumerate(world_times):
                                 col_idx = idx % 6
                                 with cols[col_idx]:
-                                    # NIGHT TIME KO RED BORDER, DAY KO GREEN
                                     border_color = "#ef4444" if 0 <= country["hour"] <= 6 else "#22c55e"
                                     st.markdown(f"""
                                     <div style="
@@ -368,7 +387,6 @@ with tab2:
             st.write(f"Claimed: {claimed}")
             st.write(f"Real IP: {real_ip}")
             st.warning("Ye account VPN/Proxy use kar raha hai ya location fake hai.")
-
             result = {
                 "username": f"[CountryCheck] {username_cc}",
                 "platform": "Country Check",
@@ -392,7 +410,6 @@ with tab2:
             st.success(f"✅ Match! Dono country same hain: {claimed}")
             st.balloons()
 
-# SIDEBAR - DOUBLE ICON FIX KIYA
 st.sidebar.header("📜 Live Scan History")
 try:
     scans = supabase.table("scans").select("*").order("created_at", desc=True).limit(10).execute()
@@ -401,10 +418,8 @@ try:
             is_bot = "Bot" in str(scan.get('result', ''))
             verdict_icon = "🤖 Bot" if is_bot else "✅ Human"
             score = scan.get('score', 0)
-
             username_raw = scan.get('username', '')
             username_display = str(username_raw).replace('[Twitter / X] ', '').replace('[CountryCheck] ', '').replace('[Facebook] ', '').replace('[Instagram] ', '').replace('[YouTube] ', '').replace('[LinkedIn] ', '').replace('[WhatsApp] ', '').replace('[Other Platforms] ', '') if username_raw else 'Unknown'
-
             tpd = scan.get('tpd', 0) or 0
             account_age = scan.get('account_age', 0) or 0
             tweet_time = scan.get('tweet_time', 'N/A') or 'N/A'
@@ -413,8 +428,6 @@ try:
             verified_text = "✅ Verified" if scan.get('is_verified', False) else "❌ Unverified"
             created_at = scan.get('created_at', '')
             time_display = created_at[:16].replace('T', ' ') if created_at else 'N/A'
-
-            # LABEL SE ICON HATA DIYA - AB DOUBLE NAHI DIKHEGA
             st.sidebar.markdown(f"""
             <div style="
                 background: #0f172a;
@@ -445,24 +458,17 @@ try:
 except Exception as e:
     st.sidebar.error(f"History load nahi hui: {str(e)[:50]}")
 
-# EXTRA ADD - Instructions + System Status + Quick Stats
 st.markdown("---")
 col_left, col_right = st.columns([2, 1])
-
 with col_left:
     st.markdown("### 📋 Instructions")
     st.info("""
     How to use:
-
     1. Bot Check: Enter username and select platform to detect bots
-
     2. Country Check: Verify if user's claimed country matches IP location
-
     3. Manual Check: Paste text to check for spam patterns
-
     4. History: View last 10 scans in the sidebar
     """)
-
 with col_right:
     st.markdown("### ⚙️ System Status")
     try:
@@ -470,7 +476,6 @@ with col_right:
         st.success("✅ Database Connected")
     except:
         st.error("❌ Database Error")
-
     st.markdown("### 📊 Quick Stats")
     try:
         total_scans = supabase.table("scans").select("id", count="exact").execute()
@@ -478,7 +483,6 @@ with col_right:
     except:
         st.metric("Total Scans", "N/A")
 
-# Footer with Tiranga
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #666;'>🐍 Version Vasuki Ai 4.0 - Bot Detector | Built by Nishad Singh 🇮🇳 | Made in Bharat</div>",
