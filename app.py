@@ -76,6 +76,7 @@ def fetch_x_data(username):
     except: return None
     return None
 
+# ✅ FIXED FUNCTION - THRESHOLD 40, COUNTRY +60, TIME FIX
 def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, account_age=0,
                          tweet_time="", ip_country="", claimed_country="", tweet_text=""):
     score = 0
@@ -99,16 +100,30 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
     if re.search(r'user\d+|bot\d+|temp\d+|test\d+', username.lower()):
         score += 20
         if st.session_state.admin: reasons.append("Fake/Bot jaisa username")
-    if tweet_time and claimed_country.lower() in COUNTRIES_TZ:
+
+    # ✅ TIME CHECK FIXED - IST to Claimed Country convert
+    if tweet_time and claimed_country and claimed_country.lower() in COUNTRIES_TZ:
         try:
-            tweet_hour = datetime.strptime(tweet_time, "%H:%M").hour
-            if tweet_hour >= 0 and tweet_hour <= 6:
+            tweet_hour, tweet_min = map(int, tweet_time.split(":"))
+            country_tz_str = COUNTRIES_TZ[claimed_country.lower()]["tz"]
+            country_tz = pytz.timezone(country_tz_str)
+
+            ist = pytz.timezone('Asia/Kolkata')
+            today = datetime.now(ist).date()
+            ist_dt = ist.localize(datetime(today.year, today.month, today.day, tweet_hour, tweet_min))
+            country_dt = ist_dt.astimezone(country_tz)
+            country_hour = country_dt.hour
+
+            if 0 <= country_hour <= 6:
                 score += 15
-                if st.session_state.admin: reasons.append(f"{claimed_country} me raat 12-6 baje tweet - Suspicious")
+                if st.session_state.admin: reasons.append(f"{claimed_country} me raat {country_hour}:00 baje tweet - Suspicious")
         except: pass
-    if ip_country and ip_country.lower()!= claimed_country.lower():
-        score += 20
-        if st.session_state.admin: reasons.append(f"IP: {ip_country}, Claimed: {claimed_country}")
+
+    # ✅ COUNTRY MISMATCH = +60 SCORE AB
+    if ip_country and claimed_country and ip_country.lower()!= claimed_country.lower():
+        score += 60 # 20 se badha ke 60
+        if st.session_state.admin: reasons.append(f"Country Mismatch: {claimed_country} vs {ip_country} - High Risk")
+
     if is_verified and numbers >= 4:
         score += 30
         if st.session_state.admin: reasons.append("Verified Bot Loophole Detected")
@@ -247,7 +262,8 @@ with tab1:
                     claimed_country=claimed_country, tweet_text=tweet_text
                 )
 
-                is_bot = score >= 50
+                # ✅ THRESHOLD 40 KAR DIYA
+                is_bot = score >= 40
                 result_text = f"🤖 {platform} Bot - {score}% Match" if is_bot else f"✅ Human - {100-score}% Safe"
                 tpd = int(tweet_count / max(account_age_days, 1))
                 verified_text = "✅ Verified" if is_verified else "❌ Unverified"
@@ -273,7 +289,8 @@ with tab1:
                     st.success("🎉 Scan Complete!")
                     st.subheader("📊 Bot Probability Meter")
                     st.progress(score/100)
-                    st.metric("Bot Score", f"{score}%", delta=f"{'Danger' if score>=70 else 'Suspicious' if score>=50 else 'Safe'}", delta_color="inverse")
+                    # ✅ METRIC DELTA BHI 40 KAR DIYA
+                    st.metric("Bot Score", f"{score}%", delta=f"{'Danger' if score>=70 else 'Suspicious' if score>=40 else 'Safe'}", delta_color="inverse")
 
                     # VERIFIED STATUS - DOUBLE ICON FIX KIYA
                     st.write(f"*Verified Status:* {verified_text}")
