@@ -10,7 +10,6 @@ import pytz
 import pycountry
 from bs4 import BeautifulSoup
 
-# SECRETS SE TOKEN LO
 ADMIN_PASS = st.secrets.get("ADMIN_PASS", "admin123")
 X_BEARER_TOKEN = st.secrets.get("X_BEARER_TOKEN")
 
@@ -139,8 +138,7 @@ def render_scan_card(username, platform, score, is_verified, tweet_count, accoun
     v_score, v_label = get_score_color_label(100 if is_verified else 0)
     posts_per_week = round(tweet_count / max(account_age_days/7, 1), 1)
 
-    # YE LINE SABSE IMPORTANT HAI - st.markdown + unsafe_allow_html=True
-    # AGAR TU st.write() YA st.code() LIKHEGA TO CODE DIKHEGA
+    # YE st.markdown HAI - st.code YA st.write NAHI HAI
     st.markdown(f"""
     <style>
 .main-card {{ background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 24px; color: white; font-family: 'Segoe UI', sans-serif; margin-top: 20px; }}
@@ -275,7 +273,6 @@ def render_scan_card(username, platform, score, is_verified, tweet_count, accoun
     </div>
     """, unsafe_allow_html=True)
 
-# Supabase connection
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
@@ -343,7 +340,7 @@ with tab1:
         claimed_country = st.selectbox("Claimed Country", ALL_COUNTRIES, key="claimed_country")
         ip_country = st.selectbox("Real IP Country", ALL_COUNTRIES, key="ip_country")
 
-    # VIEW REPORT KA LOGIC - SABSE UPAR RAKHA
+    # VIEW REPORT KA LOGIC - SABSE UPAR RAKHA - NO st.stop()
     show_old_report = False
     if st.session_state.selected_scan_id:
         scan_data = supabase.table("scans").select("*").eq("id", st.session_state.selected_scan_id).execute()
