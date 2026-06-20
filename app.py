@@ -19,14 +19,12 @@ if 'admin' not in st.session_state:
 if 'selected_scan_id' not in st.session_state:
     st.session_state.selected_scan_id = None
 
-# 195 COUNTRIES LIST - FIX
 def get_all_countries():
     countries_list = []
     for country in pycountry.countries:
         countries_list.append(country.name)
     return sorted(countries_list)
 
-# TIMEZONE WALE COUNTRIES - ALAG FUNCTION
 def get_countries_with_tz():
     countries = {}
     for country in pycountry.countries:
@@ -41,10 +39,9 @@ def get_countries_with_tz():
         except: pass
     return countries
 
-ALL_COUNTRIES = get_all_countries() # 195 Countries
-COUNTRIES_TZ = get_countries_with_tz() # Timezone ke liye
+ALL_COUNTRIES = get_all_countries()
+COUNTRIES_TZ = get_countries_with_tz()
 
-# X API + NITTER DONO - AUTOMATIC FALLBACK
 def fetch_x_data(username):
     username = username.replace("@", "").strip()
     if X_BEARER_TOKEN:
@@ -142,7 +139,8 @@ def render_scan_card(username, platform, score, is_verified, tweet_count, accoun
     v_score, v_label = get_score_color_label(100 if is_verified else 0)
     posts_per_week = round(tweet_count / max(account_age_days/7, 1), 1)
 
-    # YAHAN FIX HAI - st.markdown + unsafe_allow_html=True
+    # YE LINE SABSE IMPORTANT HAI - st.markdown + unsafe_allow_html=True
+    # AGAR TU st.write() YA st.code() LIKHEGA TO CODE DIKHEGA
     st.markdown(f"""
     <style>
 .main-card {{ background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 24px; color: white; font-family: 'Segoe UI', sans-serif; margin-top: 20px; }}
@@ -286,7 +284,6 @@ st.set_page_config(page_title="Vasuki Ai 4.0 - Bot Detector", page_icon="🐍", 
 st.title("🐍 Vasuki Ai 4.0 - Universal Bot Detector")
 st.caption("Multi-Platform Account & Text Scanner | Powered by AI")
 
-# FontAwesome CDN - Icons ke liye ZARURI HAI
 st.markdown('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">', unsafe_allow_html=True)
 
 with st.sidebar:
@@ -343,22 +340,21 @@ with tab1:
             account_age_days = st.number_input("Account Age (Days)", 0, value=0)
             tweet_time = st.text_input("Last Tweet Time (HH:MM)", "14:30")
 
-        # 195 COUNTRIES DROPDOWN - FIX
         claimed_country = st.selectbox("Claimed Country", ALL_COUNTRIES, key="claimed_country")
         ip_country = st.selectbox("Real IP Country", ALL_COUNTRIES, key="ip_country")
 
-    # Agar View Report button click hua hai to purana scan dikhao
+    # VIEW REPORT KA LOGIC - SABSE UPAR RAKHA
+    show_old_report = False
     if st.session_state.selected_scan_id:
         scan_data = supabase.table("scans").select("*").eq("id", st.session_state.selected_scan_id).execute()
         if scan_data.data:
             scan = scan_data.data[0]
             st.info("📄 Viewing saved report")
-            # Yahan purane scan ka data nikal ke card render karo
             render_scan_card(
                 username=scan['username'],
                 platform=scan['platform'],
                 score=scan.get('score', 0),
-                is_verified=False, # Supabase se nahi aata abhi
+                is_verified=False,
                 tweet_count=0,
                 account_age_days=0,
                 scan_time=scan['created_at'][:19].replace('T', ' ')
@@ -366,53 +362,56 @@ with tab1:
             if st.button("⬅️ Back to New Scan"):
                 st.session_state.selected_scan_id = None
                 st.rerun()
+            show_old_report = True
 
-    if st.button("🚀 Scan Karo"):
-        st.session_state.selected_scan_id = None # Naya scan karte hi purana clear
-        if username or (scan_mode == "Manual - Khud bharo" and tweet_text):
-            clean_username = username if username.startswith("@") or "http" in username else f"@{username}"
-            if not username and tweet_text:
-                clean_username = "Anonymous Text"
+    # NAYA SCAN - JAB TAK PURANA REPORT NAHI DIKH RAHA
+    if not show_old_report:
+        if st.button("🚀 Scan Karo"):
+            st.session_state.selected_scan_id = None
+            if username or (scan_mode == "Manual - Khud bharo" and tweet_text):
+                clean_username = username if username.startswith("@") or "http" in username else f"@{username}"
+                if not username and tweet_text:
+                    clean_username = "Anonymous Text"
 
-            with st.spinner(f"Vasuki Ai Brain Scanning {platform} data... 🧠"):
-                if scan_mode == "Auto - X API/Nitter se data lao" and platform == "Twitter / X":
-                    x_data = fetch_x_data(clean_username)
-                    if x_data:
-                        bio = x_data.get('bio', '')
-                        is_verified = x_data.get('is_verified', False)
-                        tweet_count = int(x_data.get('tweet_count', 0)) if str(x_data.get('tweet_count', 0)).isdigit() else 0
-                        account_age_days = x_data.get('account_age', 0)
-                        st.success("✅ X API/Nitter se data mil gaya")
-                    else:
-                        st.warning("⚠️ Data nahi mila. Manual mode use karo.")
+                with st.spinner(f"Vasuki Ai Brain Scanning {platform} data... 🧠"):
+                    if scan_mode == "Auto - X API/Nitter se data lao" and platform == "Twitter / X":
+                        x_data = fetch_x_data(clean_username)
+                        if x_data:
+                            bio = x_data.get('bio', '')
+                            is_verified = x_data.get('is_verified', False)
+                            tweet_count = int(x_data.get('tweet_count', 0)) if str(x_data.get('tweet_count', 0)).isdigit() else 0
+                            account_age_days = x_data.get('account_age', 0)
+                            st.success("✅ X API/Nitter se data mil gaya")
+                        else:
+                            st.warning("⚠️ Data nahi mila. Manual mode use karo.")
 
-                score, reasons = check_bot_score_gupt(
-                    username=clean_username, bio=bio, is_verified=is_verified, tweet_count=tweet_count,
-                    account_age=account_age_days, tweet_time=tweet_time, ip_country=ip_country,
-                    claimed_country=claimed_country, tweet_text=tweet_text
-                )
+                    score, reasons = check_bot_score_gupt(
+                        username=clean_username, bio=bio, is_verified=is_verified, tweet_count=tweet_count,
+                        account_age=account_age_days, tweet_time=tweet_time, ip_country=ip_country,
+                        claimed_country=claimed_country, tweet_text=tweet_text
+                    )
 
-                is_bot = score >= 50
-                result_text = f"🤖 {platform} Bot - {score}% Match" if is_bot else f"✅ Human - {100-score}% Safe"
+                    is_bot = score >= 50
+                    result_text = f"🤖 {platform} Bot - {score}% Match" if is_bot else f"✅ Human - {100-score}% Safe"
 
-                result = {
-                    "username": f"[{platform}] {clean_username}",
-                    "platform": platform,
-                    "scan_type": "Bot Check",
-                    "result": result_text,
-                    "country": claimed_country,
-                    "score": score
-                }
+                    result = {
+                        "username": f"[{platform}] {clean_username}",
+                        "platform": platform,
+                        "scan_type": "Bot Check",
+                        "result": result_text,
+                        "country": claimed_country,
+                        "score": score
+                    }
 
-                try:
-                    supabase.table("scans").insert(result).execute()
-                    scan_time = datetime.now().strftime("%d %b %Y, %I:%M %p")
-                    render_scan_card(clean_username, platform, score, is_verified, tweet_count, account_age_days, scan_time)
+                    try:
+                        supabase.table("scans").insert(result).execute()
+                        scan_time = datetime.now().strftime("%d %b %Y, %I:%M %p")
+                        render_scan_card(clean_username, platform, score, is_verified, tweet_count, account_age_days, scan_time)
 
-                except Exception as e:
-                    st.error(f"Supabase Error: {e}")
-        else:
-            st.warning("⚠️ Scan karne ke liye Username ya Text daalna zaroori hai bhai!")
+                    except Exception as e:
+                        st.error(f"Supabase Error: {e}")
+            else:
+                st.warning("⚠️ Scan karne ke liye Username ya Text daalna zaroori hai bhai!")
 
 with tab2:
     st.subheader("🌍 Country Mismatch Detector")
@@ -420,10 +419,8 @@ with tab2:
 
     col1, col2 = st.columns(2)
     with col1:
-        # 195 COUNTRIES DROPDOWN - FIX
         claimed = st.selectbox("Claimed Country:", ALL_COUNTRIES, key="claimed_cc")
     with col2:
-        # 195 COUNTRIES DROPDOWN - FIX
         real_ip = st.selectbox("Real IP Country:", ALL_COUNTRIES, key="real_cc")
 
     username_cc = st.text_input("Username for reference:", placeholder="@username", key="cc_user")
@@ -452,7 +449,6 @@ with tab2:
             st.success(f"✅ Match! Dono country same hain: {claimed}")
             st.balloons()
 
-# ===== SIDEBAR ME CHOTE CARDS + VIEW REPORT BUTTON - FIXED =====
 st.sidebar.header("📜 Live Scan History")
 try:
     scans = supabase.table("scans").select("*").order("created_at", desc=True).limit(10).execute()
@@ -463,7 +459,6 @@ try:
             color = "#f87171" if is_bot else "#4ade80"
             icon = "🔴" if is_bot else "🟢"
 
-            # Chota Card HTML - unsafe_allow_html=True zaruri hai
             st.sidebar.markdown(f"""
             <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 12px; margin-bottom: 10px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -475,7 +470,6 @@ try:
             </div>
             """, unsafe_allow_html=True)
 
-            # View Report Button - Ab kaam karega
             if st.sidebar.button("📄 View Report", key=f"view_{scan['id']}", use_container_width=True):
                 st.session_state.selected_scan_id = scan['id']
                 st.rerun()
@@ -484,7 +478,6 @@ try:
 except Exception as e:
     st.sidebar.error(f"History load nahi hui: {str(e)[:50]}")
 
-# EXTRA ADD - Instructions + System Status + Quick Stats
 st.markdown("---")
 col_left, col_right = st.columns([2, 1])
 
@@ -517,7 +510,6 @@ with col_right:
     except:
         st.metric("Total Scans", "N/A")
 
-# Footer with Tiranga
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #666;'>🐍 Vasuki Ai 4.0 - Bot Detector | Built by Nishad Singh 🇮🇳 | Made in Bharat</div>",
