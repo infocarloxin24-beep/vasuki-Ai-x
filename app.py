@@ -120,30 +120,36 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
         if st.session_state.admin: reasons.append("Copy-paste pattern - Bot signature")
     return min(score, 100), reasons
 
-# SABHI DESH KI TIMING NIKALNE KA FUNCTION
-def get_world_timing(tweet_time_str):
+# PURI DUNIYA KE 195 COUNTRY - COMPACT GRID
+def get_world_timing_grid_195(tweet_time_str):
     if not tweet_time_str:
         return []
     try:
         hour, minute = map(int, tweet_time_str.split(":"))
         now = datetime.now()
         input_dt = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-        countries_to_show = ["India", "United States", "United Kingdom", "Australia", "Japan", "Russia", "China", "Brazil", "United Arab Emirates", "Germany"]
+
         result = []
-        for country_name in countries_to_show:
+        for country in pycountry.countries:
             try:
-                country = pycountry.countries.get(name=country_name)
-                if country:
-                    tz_list = pytz.country_timezones.get(country.alpha_2)
-                    if tz_list:
-                        tz = pytz.timezone(tz_list[0])
-                        ist = pytz.timezone('Asia/Kolkata')
-                        local_dt = ist.localize(input_dt)
-                        utc_dt = local_dt.astimezone(pytz.utc)
-                        country_time = utc_dt.astimezone(tz)
-                        flag = "🌙" if 0 <= country_time.hour <= 6 else "☀️"
-                        result.append(f"{country_name}: {country_time.strftime('%H:%M')} {flag}")
+                tz_list = pytz.country_timezones.get(country.alpha_2)
+                if tz_list:
+                    tz = pytz.timezone(tz_list[0]) # Pehla timezone le lo
+                    ist = pytz.timezone('Asia/Kolkata')
+                    local_dt = ist.localize(input_dt)
+                    utc_dt = local_dt.astimezone(pytz.utc)
+                    country_time = utc_dt.astimezone(tz)
+                    flag_icon = "🌙" if 0 <= country_time.hour <= 6 else "☀️"
+                    result.append({
+                        "name": country.name,
+                        "time": country_time.strftime('%H:%M'),
+                        "icon": flag_icon,
+                        "hour": country_time.hour,
+                        "flag": country.flag if hasattr(country, 'flag') else "🏳️"
+                    })
             except: pass
+        # Name se sort kar do
+        result = sorted(result, key=lambda x: x["name"])
         return result
     except: return []
 
@@ -204,7 +210,6 @@ with tab1:
 
         col1, col2 = st.columns(2)
         with col1:
-            # VERIFIED / UNVERIFIED OPTION - FIX KIYA
             verified_status = st.radio("Verified Status:", ["❌ Unverified", "✅ Verified"], horizontal=True)
             is_verified = True if verified_status == "✅ Verified" else False
             tweet_count = st.number_input("Total Tweets/Posts", 0, value=0)
@@ -267,8 +272,8 @@ with tab1:
                     st.progress(score/100)
                     st.metric("Bot Score", f"{score}%", delta=f"{'Danger' if score>=70 else 'Suspicious' if score>=50 else 'Safe'}", delta_color="inverse")
 
-                    # VASUKI RESULT MEIN VERIFIED DIKHAO
-                    st.write(f"*✔️ Verified Status:* {verified_text}")
+                    # VERIFIED STATUS - DOUBLE ICON FIX KIYA
+                    st.write(f"*Verified Status:* {verified_text}")
 
                     if is_bot:
                         st.error(f"🚨 RESULT: {result_text}")
@@ -281,12 +286,44 @@ with tab1:
                         st.success(f"💚 RESULT: {result_text}")
                         st.write("यह कमेंट या अकाउंट पूरी तरह से सुरक्षित और मानवीय लग रहा है.")
 
-                    # SABHI DESH KI TIMING DIKHAO
+                    # 195 COUNTRY KA COMPACT DASHBOARD
                     if tweet_time:
-                        st.write("*🌍 World Timing Check:*")
-                        world_times = get_world_timing(tweet_time)
-                        for wt in world_times:
-                            st.write(f"• {wt}")
+                        st.write("*🌍 World Timing Dashboard - 195 Countries*")
+                        st.caption("🌙 = Raat 12-6 baje | ☀️ = Din ka time | Red Border = Raat | Green Border = Din")
+
+                        world_times = get_world_timing_grid_195(tweet_time)
+
+                        # Expander mein daal diya taki UI clean rahe
+                        with st.expander(f"📊 Show All 195 Countries Timing", expanded=False):
+                            # 6 COLUMNS MEIN GRID - COMPACT
+                            cols = st.columns(6)
+                            for idx, country in enumerate(world_times):
+                                col_idx = idx % 6
+                                with cols[col_idx]:
+                                    # NIGHT TIME KO RED BORDER, DAY KO GREEN
+                                    border_color = "#ef4444" if 0 <= country["hour"] <= 6 else "#22c55e"
+                                    st.markdown(f"""
+                                    <div style="
+                                        background: #1e293b;
+                                        border: 2px solid {border_color};
+                                        border-radius: 6px;
+                                        padding: 4px;
+                                        margin-bottom: 4px;
+                                        text-align: center;
+                                        font-size: 9px;
+                                        line-height: 1.1;
+                                    ">
+                                        <div style="font-size: 12px; margin-bottom: 1px;">
+                                            {country['flag']}
+                                        </div>
+                                        <div style="font-weight: bold; color: #e2e8f0; margin-bottom: 2px; font-size: 8px;">
+                                            {country['name'][:10]}
+                                        </div>
+                                        <div style="font-size: 11px; color: white;">
+                                            {country['time']} {country['icon']}
+                                        </div>
+                                    </div>
+                                    """, unsafe_allow_html=True)
 
                 except Exception as e:
                     st.error(f"Supabase Error: {e}")
@@ -335,7 +372,7 @@ with tab2:
             st.success(f"✅ Match! Dono country same hain: {claimed}")
             st.balloons()
 
-# SIDEBAR - NONETYPE ERROR FIX + VERIFIED STATUS
+# SIDEBAR - DOUBLE ICON FIX KIYA
 st.sidebar.header("📜 Live Scan History")
 try:
     scans = supabase.table("scans").select("*").order("created_at", desc=True).limit(10).execute()
@@ -345,7 +382,6 @@ try:
             verdict_icon = "🤖 Bot" if is_bot else "✅ Human"
             score = scan.get('score', 0)
 
-            # NONE HANDLE KIYA - ERROR FIX
             username_raw = scan.get('username', '')
             username_display = str(username_raw).replace('[Twitter / X] ', '').replace('[CountryCheck] ', '').replace('[Facebook] ', '').replace('[Instagram] ', '').replace('[YouTube] ', '').replace('[LinkedIn] ', '').replace('[WhatsApp] ', '').replace('[Other Platforms] ', '') if username_raw else 'Unknown'
 
@@ -358,7 +394,7 @@ try:
             created_at = scan.get('created_at', '')
             time_display = created_at[:16].replace('T', ' ') if created_at else 'N/A'
 
-            # CARD MEIN VERIFIED STATUS
+            # LABEL SE ICON HATA DIYA - AB DOUBLE NAHI DIKHEGA
             st.sidebar.markdown(f"""
             <div style="
                 background: #0f172a;
@@ -377,7 +413,7 @@ try:
                 <div>📅 Account Age: {account_age} days</div>
                 <div>⏰ Last Tweet: {tweet_time}</div>
                 <div>📝 Total Posts: {total_posts}</div>
-                <div>✔️ Verified: {verified_text}</div>
+                <div>Verified: {verified_text}</div>
                 <div style="margin-top: 4px;">⚠️ Flags:</div>
                 <div style="font-size: 10px; color: #94a3b8;">• {str(flags).replace(', ', '<br>• ')}</div>
                 <div style="color: #64748b; font-size: 9px; margin-top: 4px;">
