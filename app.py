@@ -136,7 +136,7 @@ st.set_page_config(page_title="Vasuki Ai 4.0 - Bot Detector", page_icon="🐍", 
 st.title("🐍 Vasuki Ai 4.0 - Universal Bot Detector")
 st.caption("Multi-Platform Account & Text Scanner | Powered by AI")
 
-# FontAwesome CDN add kiya - Icons ke liye
+# FontAwesome CDN - Icons ke liye ZARURI HAI
 st.markdown('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">', unsafe_allow_html=True)
 
 with st.sidebar:
@@ -229,49 +229,50 @@ with tab1:
                     "platform": platform,
                     "scan_type": "Bot Check",
                     "result": result_text,
-                    "country": claimed_country
+                    "country": claimed_country,
+                    "score": score
                 }
 
                 try:
                     supabase.table("scans").insert(result).execute()
-                    st.success("🎉 Scan Complete!")
 
-                    # YAHAN SE NAYA CARD START HOTA HAI - SCREENSHOT WALA
+                    # ===== YAHAN SE PURANA CARD HATA KE NAYA CARD DALA HAI =====
                     verdict = "Likely Bot" if score >= 50 else "Human"
                     verdict_color = "#f87171" if score >= 50 else "#4ade80"
                     verdict_desc = "This account shows strong signs of automated behavior." if score >= 50 else "This account appears to be operated by a human."
 
-                    # Fake metrics - tu apne hisaab se calculate kar lena
+                    # Metrics - abhi hardcoded hain, tu apne logic se calculate kar lena
                     u_score, u_label = get_score_color_label(40)
                     p_score, p_label = get_score_color_label(70)
                     a_score, a_label = get_score_color_label(30)
                     e_score, e_label = get_score_color_label(25)
                     b_score, b_label = get_score_color_label(45)
-                    v_score, v_label = get_score_color_label(0)
+                    v_score, v_label = get_score_color_label(0 if not is_verified else 100)
 
                     scan_time = datetime.now().strftime("%d %b %Y, %I:%M %p")
+                    posts_per_week = round(tweet_count / max(account_age_days/7, 1), 1)
 
                     st.markdown(f"""
                     <style>
-                   .main-card {{ background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 24px; color: white; font-family: 'Segoe UI', sans-serif; margin-top: 20px; }}
-                   .top-section {{ display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; margin-bottom: 20px; }}
-                   .profile-box {{ background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; display: flex; gap: 20px; }}
-                   .pfp-ring {{ width: 90px; height: 90px; background: linear-gradient(45deg, #ec4899, #8b5cf6, #3b82f6); padding: 3px; border-radius: 50%; animation: pulse 2s infinite; }}
+                  .main-card {{ background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 24px; color: white; font-family: 'Segoe UI', sans-serif; margin-top: 20px; }}
+                  .top-section {{ display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; margin-bottom: 20px; }}
+                  .profile-box {{ background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; display: flex; gap: 20px; }}
+                  .pfp-ring {{ width: 90px; height: 90px; background: linear-gradient(45deg, #ec4899, #8b5cf6, #3b82f6); padding: 3px; border-radius: 50%; animation: pulse 2s infinite; }}
                     @keyframes pulse {{ 0%, 100% {{ opacity: 1; }} 50% {{ opacity: 0.8; }} }}
-                   .pfp-ring img {{ width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #0b1220; }}
-                   .bot-score-box {{ background: #1a0b0b; border: 1px solid #3f1212; border-radius: 12px; padding: 20px; text-align: center; }}
-                   .bot-score-val {{ font-size: 56px; font-weight: 700; color: {verdict_color}; margin: 8px 0; line-height: 1; }}
-                   .progress-bar {{ width: 100%; height: 6px; background: #374151; border-radius: 3px; margin-top: 12px; }}
-                   .progress-fill {{ height: 100%; background: {verdict_color}; border-radius: 3px; width: {score}%; }}
-                   .metrics-grid {{ display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 16px; margin-bottom: 20px; }}
-                   .metric-item {{ text-align: center; }}
-                   .metric-bar {{ width: 100%; height: 4px; background: #374151; border-radius: 2px; margin: 8px 0; }}
-                   .metric-fill {{ height: 100%; border-radius: 2px; }}
-                   .bottom-section {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }}
-                   .info-box {{ background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; }}
-                   .summary-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #1e293b; }}
-                   .recommend-box {{ background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; }}
-                   .footer-box {{ background: #064e3b; border: 1px solid #059669; border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; }}
+                  .pfp-ring img {{ width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #0b1220; }}
+                  .bot-score-box {{ background: #1a0b0b; border: 1px solid #3f1212; border-radius: 12px; padding: 20px; text-align: center; }}
+                  .bot-score-val {{ font-size: 56px; font-weight: 700; color: {verdict_color}; margin: 8px 0; line-height: 1; }}
+                  .progress-bar {{ width: 100%; height: 6px; background: #374151; border-radius: 3px; margin-top: 12px; }}
+                  .progress-fill {{ height: 100%; background: {verdict_color}; border-radius: 3px; width: {score}%; }}
+                  .metrics-grid {{ display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 16px; margin-bottom: 20px; }}
+                  .metric-item {{ text-align: center; }}
+                  .metric-bar {{ width: 100%; height: 4px; background: #374151; border-radius: 2px; margin: 8px 0; }}
+                  .metric-fill {{ height: 100%; border-radius: 2px; }}
+                  .bottom-section {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }}
+                  .info-box {{ background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; }}
+                  .summary-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #1e293b; }}
+                  .recommend-box {{ background: #0b1220; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; }}
+                  .footer-box {{ background: #064e3b; border: 1px solid #059669; border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; }}
                     </style>
 
                     <div class="main-card">
@@ -340,8 +341,8 @@ with tab1:
                             </div>
                             <div class="metric-item">
                                 <p style="margin:0; color:#60a5fa; font-size:12px;"><i class="fas fa-shield-halved" style="color:{v_score};"></i> Verification</p>
-                                <h3 style="margin:4px 0; color:{v_score}; font-size:28px;">0<span style="color:#64748b; font-size:16px;">/100</span></h3>
-                                <div class="metric-bar"><div class="metric-fill" style="width:0%; background:{v_score};"></div></div>
+                                <h3 style="margin:4px 0; color:{v_score}; font-size:28px;">{100 if is_verified else 0}<span style="color:#64748b; font-size:16px;">/100</span></h3>
+                                <div class="metric-bar"><div class="metric-fill" style="width:{100 if is_verified else 0}%; background:{v_score};"></div></div>
                                 <p style="margin:0; color:{v_score}; font-size:12px;">{v_label}</p>
                             </div>
                         </div>
@@ -353,7 +354,7 @@ with tab1:
                                 <div style="border-top:1px solid #1e293b; padding-top:12px;">
                                     <p style="margin:8px 0; font-size:13px;"><i class="fas fa-circle-xmark" style="color:#f87171;"></i> <b>Username Pattern</b><br><span style="color:#94a3b8;">Username contains suspicious pattern or uncommon characters.</span></p>
                                     <p style="margin:8px 0; font-size:13px;"><i class="fas fa-triangle-exclamation" style="color:#fbbf24;"></i> <b>Low Engagement</b><br><span style="color:#94a3b8;">Very low likes, comments or interactions compared to follower count.</span></p>
-                                    <p style="margin:8px 0; font-size:13px;"><i class="fas fa-circle-xmark" style="color:{verdict_color};"></i> <b>Posting Behavior</b><br><span style="color:#94a3b8;">Irregular posting pattern or large gaps between posts.</span></p>
+                                    <p style="margin:8px 0; font-size:13px;"><i class="fas fa-circle-xmark" style="color:{verdict_color};"></i> <b>Posting Behavior</b><br><span style="color:#94a3b8;">{int(tweet_count/max(account_age_days,1))} posts/day - {"Irregular pattern" if tweet_count/max(account_age_days,1) > 20 else "Normal pattern"}.</span></p>
                                 </div>
                             </div>
 
@@ -363,8 +364,8 @@ with tab1:
                                     <div class="summary-row"><span><i class="fas fa-users"></i> Followers</span><span>12.4K</span></div>
                                     <div class="summary-row"><span><i class="fas fa-user-plus"></i> Following</span><span>7,892</span></div>
                                     <div class="summary-row"><span><i class="fas fa-image"></i> Total Posts</span><span>{tweet_count}</span></div>
-                                    <div class="summary-row"><span><i class="fas fa-calendar"></i> Account Created</span><span>2 Months Ago</span></div>
-                                    <div class="summary-row"><span><i class="fas fa-chart-column"></i> Avg. Posts/Week</span><span>0.8</span></div>
+                                    <div class="summary-row"><span><i class="fas fa-calendar"></i> Account Created</span><span>{account_age_days} Days Ago</span></div>
+                                    <div class="summary-row"><span><i class="fas fa-chart-column"></i> Avg. Posts/Week</span><span>{posts_per_week}</span></div>
                                     <div class="summary-row" style="border:none;"><span><i class="fas fa-eye"></i> Profile Type</span><span>Public</span></div>
                                 </div>
 
@@ -384,7 +385,7 @@ with tab1:
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
-                    # CARD KHATAM YAHAN
+                    # ===== NAYA CARD KHATAM =====
 
                 except Exception as e:
                     st.error(f"Supabase Error: {e}")
@@ -428,20 +429,33 @@ with tab2:
             st.success(f"✅ Match! Dono country same hain: {claimed}")
             st.balloons()
 
-# इतिहास दिखाने के लिए साइडबार - Live Public History
+# ===== SIDEBAR ME CHOTE CARDS + VIEW REPORT BUTTON =====
 st.sidebar.header("📜 Live Scan History")
 try:
     scans = supabase.table("scans").select("*").order("created_at", desc=True).limit(10).execute()
     if scans.data:
         for scan in scans.data:
-            if "Bot" in scan['result'] or "Mismatch" in scan['result']:
-                st.sidebar.markdown(f"🔴 {scan['username']}")
-                st.sidebar.markdown(f"{scan['result']}")
-            else:
-                st.sidebar.markdown(f"🟢 {scan['username']}")
-                st.sidebar.markdown(f"{scan['result']}")
-            st.sidebar.caption(f"⏱️ {scan['created_at'][:19].replace('T', ' ')}")
-            st.sidebar.markdown("---")
+            is_bot = "Bot" in scan['result'] or "Mismatch" in scan['result']
+            score = scan.get('score', 0)
+            color = "#f87171" if is_bot else "#4ade80"
+            icon = "🔴" if is_bot else "🟢"
+            
+            # Chota Card HTML
+            st.sidebar.markdown(f"""
+            <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 12px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 13px; font-weight: 600; color: white;">{icon} {scan['username'][:20]}...</span>
+                    <span style="background: {color}; color: white; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">{score}%</span>
+                </div>
+                <p style="margin: 0 0 8px 0; font-size: 12px; color: #94a3b8;">{scan['result'][:30]}...</p>
+                <p style="margin: 0 0 8px 0; font-size: 11px; color: #64748b;">⏱️ {scan['created_at'][:19].replace('T', ' ')}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # View Report Button
+            if st.sidebar.button("📄 View Report", key=f"view_{scan['id']}", use_container_width=True):
+                st.session_state.selected_scan = scan['id']
+                st.rerun()
     else:
         st.sidebar.info("No scans yet")
 except Exception as e:
