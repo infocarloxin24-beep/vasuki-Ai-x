@@ -461,6 +461,6 @@ with col_right:
 # Footer with Tiranga
 st.markdown("---")
 st.markdown(
-    "<div style='text-align: center; color: #666;'>🐍 Vasuki Ai 4.0 - Bot Detector | Built by Nishad Singh 🇮🇳 | Made in Bharat</div>",
+    "<div style='text-align: center; color: #666;'>🐍 Version Vasuki Ai 4.0 - Bot Detector | Built by Nishad Singh 🇮🇳 | Made in Bharat</div>",
     unsafe_allow_html=True
 )
