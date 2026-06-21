@@ -39,7 +39,7 @@ def get_countries_with_tz():
                     "tz": tz_list[0],
                     "code": country.alpha_2,
                     "utc": offset,
-                    "name": country.name # ✅ FIX 1: name add kiya
+                    "name": country.name
                 }
         except: pass
     return countries
@@ -47,11 +47,14 @@ def get_countries_with_tz():
 ALL_COUNTRIES = get_all_countries()
 COUNTRIES_TZ = get_countries_with_tz()
 
-# DROPDOWN KE LIYE DISPLAY LIST BANADO
+# DROPDOWN KE LIYE DISPLAY LIST BANADO + MAPPING
 COUNTRY_DISPLAY_LIST = []
+DISPLAY_TO_NAME_MAP = {} # ✅ FIX 1: Display se name nikalne ke liye map
 for name, data in sorted(COUNTRIES_TZ.items()):
     tz_abbr = data['tz'].split('/')[-1].replace('_', ' ')
-    COUNTRY_DISPLAY_LIST.append(f"{data['flag']} {name} ({tz_abbr}) UTC{data['utc']}")
+    display_str = f"{data['flag']} {name} ({tz_abbr}) UTC{data['utc']}"
+    COUNTRY_DISPLAY_LIST.append(display_str)
+    DISPLAY_TO_NAME_MAP[display_str] = name # ✅ Map banao
 
 # X API + NITTER DONO - AUTOMATIC FALLBACK
 def fetch_x_data(username):
@@ -112,14 +115,16 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
         score += 20
         if st.session_state.admin: reasons.append("Fake/Bot jaisa username")
 
-    # ✅ TIME CHECK - USER KE COUNTRY SE IST MEIN CONVERT
+    # ✅ TIME CHECK + COUNTRY MISMATCH - FIXED
     if tweet_time and user_view_country and claimed_country:
         try:
             tweet_hour, tweet_min = map(int, tweet_time.split(":"))
 
-            # User jis country se dekh raha hai uska timezone
-            if user_view_country in COUNTRIES_TZ:
-                user_tz_str = COUNTRIES_TZ[user_view_country]["tz"]
+            # ✅ FIX 2: Display string se actual country name nikalo
+            user_country_name = DISPLAY_TO_NAME_MAP.get(user_view_country)
+
+            if user_country_name and user_country_name in COUNTRIES_TZ:
+                user_tz_str = COUNTRIES_TZ[user_country_name]["tz"]
                 user_tz = pytz.timezone(user_tz_str)
 
                 # Claimed country ka timezone
@@ -138,15 +143,12 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
                 if 0 <= country_hour <= 6:
                     score += 15
                     if st.session_state.admin: reasons.append(f"{claimed_country} me raat {country_hour}:00 baje tweet - Suspicious")
-        except: pass
 
-    # ✅ COUNTRY MISMATCH = +60 SCORE - FIXED
-    if user_view_country and claimed_country:
-        if user_view_country in COUNTRIES_TZ:
-            user_country_name = COUNTRIES_TZ[user_view_country]["name"]
-            if user_country_name.lower()!= claimed_country.lower():
-                score += 60
-                if st.session_state.admin: reasons.append(f"Country Mismatch: {claimed_country} vs {user_country_name} - High Risk")
+                # ✅ COUNTRY MISMATCH = +60 SCORE - FIXED
+                if user_country_name.lower()!= claimed_country.lower():
+                    score += 60
+                    if st.session_state.admin: reasons.append(f"Country Mismatch: {claimed_country} vs {user_country_name} - High Risk")
+        except: pass
 
     if is_verified and numbers >= 4:
         score += 30
@@ -296,13 +298,13 @@ with tab1:
                     claimed_country=claimed_country, tweet_text=tweet_text
                 )
 
-                # ✅ FIX 2: THRESHOLD 50% + CLEAN IF-ELSE
+                # ✅ FIX 3: THRESHOLD 50% + CLEAN IF-ELSE
                 is_bot = score >= 50
                 if is_bot:
                     result_text = f"🤖 Bot Account - {score}% Match"
                 else:
                     result_text = f"✅ Human - {100-score}% Safe"
-                
+
                 tpd = int(tweet_count / max(account_age_days, 1))
                 verified_text = "✅ Verified" if is_verified else "❌ Unverified"
 
@@ -396,7 +398,6 @@ with tab2:
             st.write(f"Claimed: {claimed}")
             st.write(f"Real IP: {real_ip}")
             st.warning("Ye account VPN/Proxy use kar raha hai ya location fake hai.")
-            # ✅ FIX 3: COUNTRY CHECK MEIN BHI BOT LIKHNA HAI
             result = {
                 "username": f"[CountryCheck] {username_cc}",
                 "platform": "Country Check",
@@ -425,7 +426,6 @@ try:
     scans = supabase.table("scans").select("*").order("created_at", desc=True).limit(10).execute()
     if scans.data:
         for scan in scans.data:
-            # ✅ FIX 4: SIDEBAR LOGIC SCORE SE CHECK KARO
             score = scan.get('score', 0)
             is_bot = score >= 50
             verdict_icon = "🤖 Bot" if is_bot else "✅ Human"
