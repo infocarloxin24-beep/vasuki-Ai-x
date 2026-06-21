@@ -38,7 +38,8 @@ def get_countries_with_tz():
                     "flag": country.flag if hasattr(country, 'flag') else "🏳️",
                     "tz": tz_list[0],
                     "code": country.alpha_2,
-                    "utc": offset
+                    "utc": offset,
+                    "name": country.name # ✅ FIX 1: name add kiya
                 }
         except: pass
     return countries
@@ -117,13 +118,15 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
             tweet_hour, tweet_min = map(int, tweet_time.split(":"))
 
             # User jis country se dekh raha hai uska timezone
-            user_country_name = user_view_country.split(' ')[1] # Flag hatao
-            if user_country_name in COUNTRIES_TZ:
-                user_tz_str = COUNTRIES_TZ[user_country_name]["tz"]
+            if user_view_country in COUNTRIES_TZ:
+                user_tz_str = COUNTRIES_TZ[user_view_country]["tz"]
                 user_tz = pytz.timezone(user_tz_str)
 
                 # Claimed country ka timezone
-                claimed_tz_str = COUNTRIES_TZ[claimed_country]["tz"]
+                if claimed_country in COUNTRIES_TZ:
+                    claimed_tz_str = COUNTRIES_TZ[claimed_country]["tz"]
+                else:
+                    claimed_tz_str = 'Asia/Kolkata'
                 claimed_tz = pytz.timezone(claimed_tz_str)
 
                 # User ka time → UTC → Claimed country ka time
@@ -137,12 +140,13 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
                     if st.session_state.admin: reasons.append(f"{claimed_country} me raat {country_hour}:00 baje tweet - Suspicious")
         except: pass
 
-    # ✅ COUNTRY MISMATCH = +60 SCORE
+    # ✅ COUNTRY MISMATCH = +60 SCORE - FIXED
     if user_view_country and claimed_country:
-        user_country_name = user_view_country.split(' ')[1]
-        if user_country_name.lower()!= claimed_country.lower():
-            score += 60
-            if st.session_state.admin: reasons.append(f"Country Mismatch: {claimed_country} vs {user_country_name} - High Risk")
+        if user_view_country in COUNTRIES_TZ:
+            user_country_name = COUNTRIES_TZ[user_view_country]["name"]
+            if user_country_name.lower()!= claimed_country.lower():
+                score += 60
+                if st.session_state.admin: reasons.append(f"Country Mismatch: {claimed_country} vs {user_country_name} - High Risk")
 
     if is_verified and numbers >= 4:
         score += 30
@@ -292,8 +296,13 @@ with tab1:
                     claimed_country=claimed_country, tweet_text=tweet_text
                 )
 
-                is_bot = score >= 40
-                result_text = f"🤖 {platform} Bot - {score}% Match" if is_bot else f"✅ Human - {100-score}% Safe"
+                # ✅ FIX 2: THRESHOLD 50% + CLEAN IF-ELSE
+                is_bot = score >= 50
+                if is_bot:
+                    result_text = f"🤖 Bot Account - {score}% Match"
+                else:
+                    result_text = f"✅ Human - {100-score}% Safe"
+                
                 tpd = int(tweet_count / max(account_age_days, 1))
                 verified_text = "✅ Verified" if is_verified else "❌ Unverified"
 
@@ -317,7 +326,7 @@ with tab1:
                     st.success("🎉 Scan Complete!")
                     st.subheader("📊 Bot Probability Meter")
                     st.progress(score/100)
-                    st.metric("Bot Score", f"{score}%", delta=f"{'Danger' if score>=70 else 'Suspicious' if score>=40 else 'Safe'}", delta_color="inverse")
+                    st.metric("Bot Score", f"{score}%", delta=f"{'Danger' if score>=70 else 'Suspicious' if score>=50 else 'Safe'}", delta_color="inverse")
                     st.write(f"Verified Status: {verified_text}")
 
                     if is_bot:
@@ -387,11 +396,12 @@ with tab2:
             st.write(f"Claimed: {claimed}")
             st.write(f"Real IP: {real_ip}")
             st.warning("Ye account VPN/Proxy use kar raha hai ya location fake hai.")
+            # ✅ FIX 3: COUNTRY CHECK MEIN BHI BOT LIKHNA HAI
             result = {
                 "username": f"[CountryCheck] {username_cc}",
                 "platform": "Country Check",
                 "scan_type": "Country Check",
-                "result": f"❌ Mismatch: {claimed} vs {real_ip}",
+                "result": f"🤖 Bot Account - Country Mismatch: {claimed} vs {real_ip}",
                 "country": claimed,
                 "score": 100,
                 "tweet_count": 0,
@@ -415,9 +425,10 @@ try:
     scans = supabase.table("scans").select("*").order("created_at", desc=True).limit(10).execute()
     if scans.data:
         for scan in scans.data:
-            is_bot = "Bot" in str(scan.get('result', ''))
-            verdict_icon = "🤖 Bot" if is_bot else "✅ Human"
+            # ✅ FIX 4: SIDEBAR LOGIC SCORE SE CHECK KARO
             score = scan.get('score', 0)
+            is_bot = score >= 50
+            verdict_icon = "🤖 Bot" if is_bot else "✅ Human"
             username_raw = scan.get('username', '')
             username_display = str(username_raw).replace('[Twitter / X] ', '').replace('[CountryCheck] ', '').replace('[Facebook] ', '').replace('[Instagram] ', '').replace('[YouTube] ', '').replace('[LinkedIn] ', '').replace('[WhatsApp] ', '').replace('[Other Platforms] ', '') if username_raw else 'Unknown'
             tpd = scan.get('tpd', 0) or 0
