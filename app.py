@@ -90,9 +90,9 @@ def fetch_x_data(username):
     except: return None
     return None
 
-# ✅ UPDATED FUNCTION - USER COUNTRY TIMEZONE SE CONVERT
+# ✅ UPDATED FUNCTION - IP COUNTRY WAPAS ADD KIYA
 def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, account_age=0,
-                         tweet_time="", user_view_country="", claimed_country="", tweet_text=""):
+                         tweet_time="", user_view_country="", claimed_country="", ip_country="", tweet_text=""):
     score = 0
     reasons = []
     tpd = tweet_count / max(account_age, 1)
@@ -115,12 +115,10 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
         score += 20
         if st.session_state.admin: reasons.append("Fake/Bot jaisa username")
 
-    # ✅ TIME CHECK + COUNTRY MISMATCH - FIXED
-    if tweet_time and user_view_country and claimed_country:
+    # ✅ TIME CHECK + COUNTRY MISMATCH - IP_COUNTRY USE KIYA
+    if tweet_time and user_view_country and claimed_country and ip_country:
         try:
             tweet_hour, tweet_min = map(int, tweet_time.split(":"))
-
-            # ✅ FIX 2: Display string se actual country name nikalo
             user_country_name = DISPLAY_TO_NAME_MAP.get(user_view_country)
 
             if user_country_name and user_country_name in COUNTRIES_TZ:
@@ -128,7 +126,9 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
                 user_tz = pytz.timezone(user_tz_str)
 
                 # Claimed country ka timezone
-                if claimed_country in COUNTRIES_TZ:
+                if claimed_country == "Unknown":
+                    claimed_tz_str = 'Asia/Kolkata'
+                elif claimed_country in COUNTRIES_TZ:
                     claimed_tz_str = COUNTRIES_TZ[claimed_country]["tz"]
                 else:
                     claimed_tz_str = 'Asia/Kolkata'
@@ -144,11 +144,14 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
                     score += 15
                     if st.session_state.admin: reasons.append(f"{claimed_country} me raat {country_hour}:00 baje tweet - Suspicious")
 
-                # ✅ COUNTRY MISMATCH = +60 SCORE - FIXED
-                if user_country_name.lower()!= claimed_country.lower():
+                # ✅ COUNTRY MISMATCH = +60 SCORE - IP_COUNTRY SE CHECK
+                if claimed_country == "Unknown":
+                    if st.session_state.admin: reasons.append("Location Not Claimed - Mismatch Check Skipped")
+                elif ip_country.lower()!= claimed_country.lower():
                     score += 60
-                    if st.session_state.admin: reasons.append(f"Country Mismatch: {claimed_country} vs {user_country_name} - High Risk")
-        except: pass
+                    if st.session_state.admin: reasons.append(f"Country Mismatch: {claimed_country} vs {ip_country} - High Risk")
+        except Exception as e:
+            if st.session_state.admin: reasons.append(f"Time check error: {str(e)}")
 
     if is_verified and numbers >= 4:
         score += 30
@@ -237,6 +240,7 @@ with tab1:
     account_age_days = 0
     claimed_country = ""
     user_view_country = ""
+    ip_country = ""
     tweet_time = ""
     tweet_text = ""
     bio = ""
@@ -271,8 +275,17 @@ with tab1:
                 help="Jo time aapne daala hai wo kis country ka time hai?"
             )
 
-        claimed_country = st.selectbox("Claimed Country (User ne bio mein kya likha hai)", ALL_COUNTRIES, key="claimed_country")
-        ip_country = st.selectbox("Real IP Country", ALL_COUNTRIES, key="ip_country")
+        claimed_country = st.selectbox(
+            "Claimed Country (User ne bio mein kya likha hai)",
+            ["Unknown"] + ALL_COUNTRIES, # ✅ Unknown add kiya
+            key="claimed_country"
+        )
+
+        ip_country = st.selectbox(
+            "Real IP Country (API se mila)", # ✅ IP Country wapas add kiya
+            ALL_COUNTRIES,
+            key="ip_country"
+        )
 
     if st.button("🚀 Scan Karo"):
         if username or (scan_mode == "Manual - Khud bharo" and tweet_text):
@@ -295,7 +308,7 @@ with tab1:
                 score, reasons = check_bot_score_gupt(
                     username=clean_username, bio=bio, is_verified=is_verified, tweet_count=tweet_count,
                     account_age=account_age_days, tweet_time=tweet_time, user_view_country=user_view_country,
-                    claimed_country=claimed_country, tweet_text=tweet_text
+                    claimed_country=claimed_country, ip_country=ip_country, tweet_text=tweet_text
                 )
 
                 # ✅ FIX 3: THRESHOLD 50% + CLEAN IF-ELSE
@@ -386,14 +399,16 @@ with tab2:
 
     col1, col2 = st.columns(2)
     with col1:
-        claimed = st.selectbox("Claimed Country:", ALL_COUNTRIES, key="claimed_cc")
+        claimed = st.selectbox("Claimed Country:", ["Unknown"] + ALL_COUNTRIES, key="claimed_cc")
     with col2:
         real_ip = st.selectbox("Real IP Country:", ALL_COUNTRIES, key="real_cc")
 
     username_cc = st.text_input("Username for reference:", placeholder="@username", key="cc_user")
 
     if st.button("🔍 Country Check Karo"):
-        if claimed.lower()!= real_ip.lower():
+        if claimed == "Unknown":
+            st.info("ℹ️ Location Not Claimed - Mismatch Check Skipped")
+        elif claimed.lower()!= real_ip.lower():
             st.error(f"🚨 Mismatch Detected!")
             st.write(f"Claimed: {claimed}")
             st.write(f"Real IP: {real_ip}")
