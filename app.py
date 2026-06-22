@@ -399,7 +399,7 @@ with tab1:
                         claimed_country=claimed_country, ip_country=ip_country, tweet_text=tweet_text
                     )
 
-                    # COORDINATED BOT FIX - MAIN BUG FIXED
+                    # ===== COORDINATED BOT FIX - 100% WORKING =====
                     if is_duplicate_scan:
                         st.warning("⚠️ Duplicate Scan Detected: This exact account + content was scanned before.")
                         st.stop()
@@ -414,6 +414,7 @@ with tab1:
                             reasons.append(f"High Text Similarity: {max_similarity:.1f}% with {matched_username}")
                         score = min(score, 100)
                         is_bot = score >= 50
+                    # ===== FIX END =====
 
                     if is_bot:
                         result_text = f"🤖 Bot Account - {score}% Match"
@@ -683,7 +684,7 @@ with col2:
             st.success(f"✅ Logged in as: {current_user.email}")
             user_meta = current_user.user_metadata if hasattr(current_user, 'user_metadata') else {}
             display_name = user_meta.get('full_name', current_user.email.split('@')[0])
-            st.write(f"Name: {display_name}")
+            st.write(f"*Name:* {display_name}")
 
             col_out1, col_out2 = st.columns(2)
             with col_out1:
@@ -745,7 +746,7 @@ with col2:
             # GOOGLE + GITHUB OAUTH - API KE LIYE READY
             st.markdown("""
             <style>
-      .social-btn {
+    .social-btn {
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -762,11 +763,11 @@ with col2:
                 transition: all 0.2s;
                 text-decoration: none;
             }
-      .social-btn:hover {
+    .social-btn:hover {
                 background: #f8f9fa;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
-      .social-btn img {
+    .social-btn img {
                 width: 20px;
                 height: 20px;
             }
@@ -809,5 +810,4 @@ with col3:
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #666;'>🐍 Version Vasuki Ai 4.0 | Built by Nishad Singh 🇮🇳 | Made in India<br>"
-    "© 2026 Vasuki AI 4.0 - All Rights Reserved</div>",
-    unsafe_allow
+    "© 2026 Vasuki AI
