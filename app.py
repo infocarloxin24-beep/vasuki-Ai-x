@@ -388,7 +388,7 @@ with tab1:
                         "tweet_count": tweet_count,
                         "account_age": account_age_days,
                         "tweet_time": tweet_time,
-                        "tpd": tpd,
+                        "tpd": int(tpd), # FIX: Float ko Int banaya - 21.57 → 21
                         "tweet_text": tweet_text,
                         "flags": ", ".join(reasons) if reasons else "None",
                         "is_verified": is_verified
@@ -556,7 +556,7 @@ try:
 except Exception as e:
     st.sidebar.error(f"History load nahi hui: {str(e)[:50]}")
 
-# ===== FOOTER START - FIXED =====
+# ===== FOOTER START - FINAL FIX =====
 st.markdown("---")
 col1, col2, col3 = st.columns([2, 2, 1])
 
@@ -620,16 +620,62 @@ with col2:
         st.markdown("---")
         st.markdown("##### 🚀 Social Login")
 
-        # FIX 2: SIRF GOOGLE + GITHUB
+        # FIX 2: GOOGLE + GITHUB WITH REAL LOGOS
+        st.markdown("""
+        <style>
+      .social-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            background: white;
+            color: #3c4043;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+      .social-btn:hover {
+            background: #f8f9fa;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+      .social-btn img {
+            width: 20px;
+            height: 20px;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
         col_g, col_gh = st.columns(2)
 
         with col_g:
             if st.button("🔍 Google", use_container_width=True, key="google_login"):
                 st.info("Google OAuth coming soon...")
+            st.markdown("""
+            <div style="text-align: center; margin-top: -38px; pointer-events: none;">
+                <div class="social-btn">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                    Google
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
         with col_gh:
             if st.button("🐙 GitHub", use_container_width=True, key="github_login"):
                 st.info("GitHub Login coming soon...")
+            st.markdown("""
+            <div style="text-align: center; margin-top: -38px; pointer-events: none;">
+                <div class="social-btn">
+                    <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub">
+                    GitHub
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
 with col3:
     st.markdown("### 📊 Stats")
