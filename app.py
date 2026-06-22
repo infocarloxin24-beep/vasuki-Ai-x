@@ -741,7 +741,7 @@ with col2:
             # GOOGLE + GITHUB OAUTH - API KE LIYE READY
             st.markdown("""
             <style>
-           .social-btn {
+          .social-btn {
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -758,11 +758,11 @@ with col2:
                 transition: all 0.2s;
                 text-decoration: none;
             }
-           .social-btn:hover {
+          .social-btn:hover {
                 background: #f8f9fa;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
-           .social-btn img {
+          .social-btn img {
                 width: 20px;
                 height: 20px;
             }
@@ -805,3 +805,7 @@ with col3:
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #666;'>🐍 Version Vasuki Ai 4.0 | Built by Nishad Singh 🇮🇳 | Made in India<br>"
+    "© 2026 Vasuki AI 4.0 - All Rights Reserved</div>",
+    unsafe_allow_html=True
+)
+# ===== FOOTER END =====
