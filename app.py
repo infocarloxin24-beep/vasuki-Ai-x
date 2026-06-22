@@ -118,14 +118,14 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
     score = 0
     reasons = []
 
-    # FEATURE 3: TPD BUG FIX - Sync with proof box
+    # FEATURE 3: TPD BUG FIX - Only calculate if age > 0
     tpd = calculate_tpd(tweet_count, account_age)
     if account_age > 0 and tweet_count > 0:
         if tpd > 50:
             score += 25
             if st.session_state.admin: reasons.append(f"Roz {tpd} tweet - Bot speed")
-        elif tpd > 18: # ← FIX 1: 20 se 18 kar diya
-            score += 25 # ← FIX 2: 10 se 25 kar diya
+        elif tpd > 18: # ← FIX 1: 20 se 18 kiya
+            score += 25 # ← FIX 2: 10 se 25 kiya
             if st.session_state.admin: reasons.append(f"Roz {tpd} tweet - Insaan ke liye namumkin")
         elif tpd > 0:
             if st.session_state.admin: reasons.append(f"TPD: {tpd} - Normal")
@@ -406,10 +406,14 @@ with tab1:
                         st.metric("Bot Score", f"{score}%", delta=f"{'Danger' if score>=70 else 'Suspicious' if score>=50 else 'Safe'}", delta_color="inverse")
                         st.write(f"Verified Status: {verified_text}")
 
-                        # TPD PROOF BOX - FIXED ← FIX 3: score >= 25 condition add ki
-                        if account_age_days > 0 and tpd > 18 and score >= 25:
-                            st.error(f"🧠 Mathematical Proof: {account_age_days} din mein {tweet_count} post = {tpd} TPD")
-                            st.caption(f"6 saal tak bina chutti {tpd} post/day = Insaan ke liye namumkin. Bot Activity Detected.")
+                        # TPD PROOF BOX - FIXED ← FIX 3: Logic sync with score
+                        if account_age_days > 0 and tpd > 18:
+                            if score >= 50:
+                                st.error(f"🧠 Mathematical Proof: {account_age_days} din mein {tweet_count} post = {tpd} TPD")
+                                st.caption(f"6 saal tak bina chutti {tpd} post/day = Insaan ke liye namumkin. Bot Activity Detected.")
+                            elif score >= 25:
+                                st.warning(f"🧠 Mathematical Proof: {account_age_days} din mein {tweet_count} post = {tpd} TPD")
+                                st.caption(f"Roz {tpd} post/day - Human ke liye suspicious hai. Review zaroori.")
 
                         if max_similarity > 80:
                             st.error(f"🚨 Coordinated Bot Pattern Detected! Text Similarity: {max_similarity:.1f}%")
@@ -620,7 +624,7 @@ with col2:
             st.success(f"✅ Logged in as: {current_user.email}")
             user_meta = current_user.user_metadata if hasattr(current_user, 'user_metadata') else {}
             display_name = user_meta.get('full_name', current_user.email.split('@')[0])
-            st.write(f"Name: {display_name}")
+            st.write(f"*Name:* {display_name}")
 
             col_out1, col_out2 = st.columns(2)
             with col_out1:
@@ -682,7 +686,7 @@ with col2:
             # GOOGLE + GITHUB OAUTH - API KE LIYE READY
             st.markdown("""
             <style>
-      .social-btn {
+     .social-btn {
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -699,11 +703,11 @@ with col2:
                 transition: all 0.2s;
                 text-decoration: none;
             }
-      .social-btn:hover {
+     .social-btn:hover {
                 background: #f8f9fa;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
-      .social-btn img {
+     .social-btn img {
                 width: 20px;
                 height: 20px;
             }
