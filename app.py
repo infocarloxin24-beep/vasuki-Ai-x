@@ -24,32 +24,32 @@ if "user_scans" not in st.session_state:
 if "scan_date" not in st.session_state:
     st.session_state.scan_date = datetime.now().date()
 
-# Reset daily count if new day
 if st.session_state.scan_date!= datetime.now().date():
     st.session_state.user_scans = 0
     st.session_state.scan_date = datetime.now().date()
 
-# FEATURE 2 & 5: SEQUENCE MATCHER + TEXT SIMILARITY CHECK
+# FEATURE 2: SEQUENCE MATCHER
 def check_text_similarity(text1, text2):
     if not text1 or not text2:
         return 0
     similarity_score = SequenceMatcher(None, text1.lower(), text2.lower()).ratio() * 100
     return similarity_score
 
-# FEATURE 3: CALCULATE TPD
+# FEATURE 3: CALCULATE TPD - BUG FIXED
 def calculate_tpd(total_posts, account_age_days):
-    if account_age_days <= 0: return 0
+    if account_age_days <= 0 or total_posts <= 0:
+        return 0
     tpd = round(total_posts / account_age_days, 2)
     return tpd
 
-# 195 COUNTRIES LIST - FIX
+# 195 COUNTRIES LIST
 def get_all_countries():
     countries_list = []
     for country in pycountry.countries:
         countries_list.append(country.name)
     return sorted(countries_list)
 
-# TIMEZONE WALE COUNTRIES - FLAG + UTC KE SAATH
+# TIMEZONE WALE COUNTRIES
 def get_countries_with_tz():
     countries = {}
     for country in pycountry.countries:
@@ -72,7 +72,6 @@ def get_countries_with_tz():
 ALL_COUNTRIES = get_all_countries()
 COUNTRIES_TZ = get_countries_with_tz()
 
-# DROPDOWN KE LIYE DISPLAY LIST BANADO + MAPPING
 COUNTRY_DISPLAY_LIST = []
 DISPLAY_TO_NAME_MAP = {}
 for name, data in sorted(COUNTRIES_TZ.items()):
@@ -81,7 +80,6 @@ for name, data in sorted(COUNTRIES_TZ.items()):
     COUNTRY_DISPLAY_LIST.append(display_str)
     DISPLAY_TO_NAME_MAP[display_str] = name
 
-# X API + NITTER DONO - AUTOMATIC FALLBACK
 def fetch_x_data(username):
     username = username.replace("@", "").strip()
     if X_BEARER_TOKEN:
@@ -115,20 +113,22 @@ def fetch_x_data(username):
     except: return None
     return None
 
-# UPDATED FUNCTION - IP COUNTRY WAPAS ADD KIYA + SIMILARITY CHECK
 def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, account_age=0,
                          tweet_time="", user_view_country="", claimed_country="", ip_country="", tweet_text=""):
     score = 0
     reasons = []
 
-    # FEATURE 3: TPD CALCULATION
+    # FEATURE 3: TPD BUG FIX - Only calculate if age > 0
     tpd = calculate_tpd(tweet_count, account_age)
-    if tpd > 50:
-        score += 25
-        if st.session_state.admin: reasons.append(f"Roz {tpd} tweet - Bot speed")
-    elif tpd > 20:
-        score += 10
-        if st.session_state.admin: reasons.append(f"Roz {tpd} tweet - Suspicious")
+    if account_age > 0 and tweet_count > 0:
+        if tpd > 50:
+            score += 25
+            if st.session_state.admin: reasons.append(f"Roz {tpd} tweet - Bot speed")
+        elif tpd > 20:
+            score += 10
+            if st.session_state.admin: reasons.append(f"Roz {tpd} tweet - Suspicious")
+        elif tpd > 0:
+            if st.session_state.admin: reasons.append(f"TPD: {tpd} - Normal")
 
     if tweet_text and len(tweet_text) > 50:
         spelling_errors = len(re.findall(r'\b[a-z]{1,2}\b', tweet_text.lower()))
@@ -144,7 +144,6 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
         score += 20
         if st.session_state.admin: reasons.append("Fake/Bot jaisa username")
 
-    # TIME CHECK + COUNTRY MISMATCH - IP_COUNTRY USE KIYA
     if tweet_time and user_view_country and claimed_country and ip_country:
         try:
             tweet_hour, tweet_min = map(int, tweet_time.split(":"))
@@ -188,10 +187,8 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
     if tweet_text and re.search(r'(.{10,})\1{3,}', tweet_text):
         score += 15
         if st.session_state.admin: reasons.append("Copy-paste pattern - Bot signature")
+    return min(score, 100), reasons, tpd
 
-    return min(score, 100), reasons
-
-# PURI DUNIYA KE 195 COUNTRY - COMPACT GRID
 def get_world_timing_grid_195(tweet_time_str):
     if not tweet_time_str:
         return []
@@ -199,7 +196,6 @@ def get_world_timing_grid_195(tweet_time_str):
         hour, minute = map(int, tweet_time_str.split(":"))
         now = datetime.now()
         input_dt = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-
         result = []
         for country in pycountry.countries:
             try:
@@ -232,7 +228,7 @@ st.set_page_config(page_title="Vasuki Ai 4.0 - Bot Detector", page_icon="🐍", 
 st.title("🐍 Vasuki Ai 4.0 - Universal Bot Detector")
 st.caption("Multi-Platform Account & Text Scanner | Powered by AI")
 
-# FEATURE 1: DAILY LIMIT CALCULATION
+# FEATURE 1: DAILY LIMIT DYNAMIC
 try:
     today_count = supabase.table("scans").select("id", count="exact").gte("created_at", datetime.now().date().isoformat()).execute()
     DAILY_LIMIT = 20 if today_count.count < 500 else 10
@@ -296,7 +292,7 @@ with tab1:
         with col2:
             account_age_days = st.number_input("Account Age (Days)", 0, value=0)
 
-        st.markdown("*📍 Tweet Timing Details:*")
+        st.markdown("📍 Tweet Timing Details:")
         col3, col4 = st.columns([1,2])
         with col3:
             tweet_time = st.text_input("Tweet ka time jo dikh raha hai (HH:MM)", "14:30")
@@ -343,7 +339,7 @@ with tab1:
                         else:
                             st.warning("⚠️ Data nahi mila. Manual mode use karo.")
 
-                    # FEATURE 5: TEXT SIMILARITY CHECK WITH OLD TWEETS
+                    # FEATURE 5: TEXT SIMILARITY CHECK
                     max_similarity = 0
                     matched_tweet = ""
                     if tweet_text:
@@ -359,7 +355,7 @@ with tab1:
                                             matched_tweet = old[:50] + "..."
                         except: pass
 
-                    score, reasons = check_bot_score_gupt(
+                    score, reasons, tpd = check_bot_score_gupt(
                         username=clean_username, bio=bio, is_verified=is_verified, tweet_count=tweet_count,
                         account_age=account_age_days, tweet_time=tweet_time, user_view_country=user_view_country,
                         claimed_country=claimed_country, ip_country=ip_country, tweet_text=tweet_text
@@ -380,7 +376,6 @@ with tab1:
                     else:
                         result_text = f"✅ Human - {100-score}% Safe"
 
-                    tpd = calculate_tpd(tweet_count, account_age_days)
                     verified_text = "✅ Verified" if is_verified else "❌ Unverified"
 
                     result = {
@@ -411,12 +406,13 @@ with tab1:
                         st.metric("Bot Score", f"{score}%", delta=f"{'Danger' if score>=70 else 'Suspicious' if score>=50 else 'Safe'}", delta_color="inverse")
                         st.write(f"Verified Status: {verified_text}")
 
-                        if tpd > 18:
-                            st.error(f"🧠 **Mathematical Proof:** {account_age_days} din mein {tweet_count} post = {tpd} TPD")
+                        # TPD PROOF BOX - BUG FIXED
+                        if account_age_days > 0 and tpd > 18:
+                            st.error(f"🧠 *Mathematical Proof:* {account_age_days} din mein {tweet_count} post = {tpd} TPD")
                             st.caption(f"6 saal tak bina chutti {tpd} post/day = Insaan ke liye namumkin. 100% Bot Activity.")
 
                         if max_similarity > 80:
-                            st.error(f"🚨 **Coordinated Bot Pattern Detected!** Text Similarity: {max_similarity:.1f}%")
+                            st.error(f"🚨 *Coordinated Bot Pattern Detected!* Text Similarity: {max_similarity:.1f}%")
                             st.warning("Alag account hone ke bawajood content same hai. 100% machine!")
 
                         if is_bot:
@@ -511,6 +507,7 @@ with tab2:
             st.success(f"✅ Match! Dono country same hain: {claimed}")
             st.balloons()
 
+# FEATURE 6 & 7: FOOTER WITH FEEDBACK + LOGIN/SIGNUP + COPYRIGHT
 st.sidebar.header("📜 Live Scan History")
 try:
     scans = supabase.table("scans").select("*").order("created_at", desc=True).limit(10).execute()
@@ -559,7 +556,6 @@ try:
 except Exception as e:
     st.sidebar.error(f"History load nahi hui: {str(e)[:50]}")
 
-# FEATURE 6 & 7: FOOTER WITH FEEDBACK + LOGIN/SIGNUP + COPYRIGHT
 st.markdown("---")
 col1, col2, col3 = st.columns([2, 2, 1])
 
