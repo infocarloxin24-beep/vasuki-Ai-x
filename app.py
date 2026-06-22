@@ -563,20 +563,54 @@ with col1:
     with st.expander("💬 Feedback Do"):
         with st.form(key="feedback_footer", clear_on_submit=True):
             user_name = st.text_input("Naam:", placeholder="Nishad Singh")
+
+            # Rating Slider
             rating = st.slider("Rating:", 1, 5, 5)
+
+            # Emoji + Color logic based on rating
+            emoji_map = {
+                1: "😭",
+                2: "😟",
+                3: "😐",
+                4: "😊",
+                5: "😍"
+            }
+
+            color_map = {
+                1: "#FF4B4B",
+                2: "#FFA500",
+                3: "#FFD700",
+                4: "#90EE90",
+                5: "#00C851"
+            }
+
+            # Live preview
+            st.markdown(
+                f"""
+                <div style='text-align: center; padding: 10px; border-radius: 10px;
+                            background-color: {color_map[rating]}; color: white; font-weight: bold;'>
+                    {emoji_map[rating]} Rating: {rating}/5
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
             user_suggestion = st.text_area("Suggestion:", placeholder="Kya improve karein?")
+
             if st.form_submit_button("📢 Submit"):
                 if user_suggestion:
                     try:
                         supabase.table("feedback").insert({
                             "name": user_name if user_name else "Anonymous",
                             "rating": rating,
-                            "suggestion": user_suggestion,
-                            "timestamp": datetime.now().isoformat()
+                            "suggestion": user_suggestion
                         }).execute()
-                        st.success("🎉 Thank you! Feedback saved.")
-                    except:
-                        st.error("Error saving feedback")
+                        st.success(f"🎉 Thank you! {emoji_map[rating]} Feedback saved.")
+                        st.balloons()
+                    except Exception as e:
+                        st.error(f"Error saving feedback: {e}")
+                else:
+                    st.warning("Suggestion likho pehle")
 
 with col2:
     with st.expander("🔐 User Login / Sign Up"):
