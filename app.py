@@ -408,11 +408,11 @@ with tab1:
 
                         # TPD PROOF BOX - BUG FIXED
                         if account_age_days > 0 and tpd > 18:
-                            st.error(f"🧠 *Mathematical Proof:* {account_age_days} din mein {tweet_count} post = {tpd} TPD")
+                            st.error(f"🧠 Mathematical Proof: {account_age_days} din mein {tweet_count} post = {tpd} TPD")
                             st.caption(f"6 saal tak bina chutti {tpd} post/day = Insaan ke liye namumkin. 100% Bot Activity.")
 
                         if max_similarity > 80:
-                            st.error(f"🚨 *Coordinated Bot Pattern Detected!* Text Similarity: {max_similarity:.1f}%")
+                            st.error(f"🚨 Coordinated Bot Pattern Detected! Text Similarity: {max_similarity:.1f}%")
                             st.warning("Alag account hone ke bawajood content same hai. 100% machine!")
 
                         if is_bot:
@@ -556,46 +556,39 @@ try:
 except Exception as e:
     st.sidebar.error(f"History load nahi hui: {str(e)[:50]}")
 
+# ===== FOOTER START - FIXED =====
 st.markdown("---")
 col1, col2, col3 = st.columns([2, 2, 1])
 
 with col1:
     with st.expander("💬 Feedback Do"):
+
+        # FIX 1: SLIDER FORM KE BAHAR - Live update ke liye
+        user_name = st.text_input("Naam:", placeholder="Nishad Singh", key="fb_name")
+        rating = st.slider("Rating:", 1, 5, 5, key="fb_rating")
+
+        # Emoji + Color logic
+        emoji_map = {
+            1: "😭", 2: "😟", 3: "😐", 4: "😊", 5: "😍"
+        }
+        color_map = {
+            1: "#FF4B4B", 2: "#FFA500", 3: "#FFD700", 4: "#90EE90", 5: "#00C851"
+        }
+
+        # Live preview - Ab slider ke saath change hoga
+        st.markdown(
+            f"""
+            <div style='text-align: center; padding: 10px; border-radius: 10px; margin-bottom: 10px;
+                        background-color: {color_map[rating]}; color: white; font-weight: bold;'>
+                {emoji_map[rating]} Rating: {rating}/5
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # SIRF TEXT AREA + BUTTON FORM MEIN
         with st.form(key="feedback_footer", clear_on_submit=True):
-            user_name = st.text_input("Naam:", placeholder="Nishad Singh")
-
-            # Rating Slider
-            rating = st.slider("Rating:", 1, 5, 5)
-
-            # Emoji + Color logic based on rating
-            emoji_map = {
-                1: "😭",
-                2: "😟",
-                3: "😐",
-                4: "😊",
-                5: "😍"
-            }
-
-            color_map = {
-                1: "#FF4B4B",
-                2: "#FFA500",
-                3: "#FFD700",
-                4: "#90EE90",
-                5: "#00C851"
-            }
-
-            # Live preview
-            st.markdown(
-                f"""
-                <div style='text-align: center; padding: 10px; border-radius: 10px;
-                            background-color: {color_map[rating]}; color: white; font-weight: bold;'>
-                    {emoji_map[rating]} Rating: {rating}/5
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            user_suggestion = st.text_area("Suggestion:", placeholder="Kya improve karein?")
+            user_suggestion = st.text_area("Suggestion:", placeholder="Kya improve karein?", key="fb_sugg")
 
             if st.form_submit_button("📢 Submit"):
                 if user_suggestion:
@@ -614,11 +607,29 @@ with col1:
 
 with col2:
     with st.expander("🔐 User Login / Sign Up"):
-        auth_mode = st.radio("Mode:", ["Login", "Sign Up"], horizontal=True)
+        auth_mode = st.radio("Mode:", ["Login", "Sign Up"], horizontal=True, key="auth_mode")
+
+        # Email-Password Login
+        st.markdown("##### 📧 Email se Login")
         email = st.text_input("Email:", key="auth_email")
         password = st.text_input("Password:", type="password", key="auth_pass")
-        if st.button("Submit", key="auth_submit"):
+
+        if st.button("Submit", key="auth_submit", use_container_width=True):
             st.info(f"{auth_mode} feature coming soon. Supabase Auth integrate hoga.")
+
+        st.markdown("---")
+        st.markdown("##### 🚀 Social Login")
+
+        # FIX 2: SIRF GOOGLE + GITHUB
+        col_g, col_gh = st.columns(2)
+
+        with col_g:
+            if st.button("🔍 Google", use_container_width=True, key="google_login"):
+                st.info("Google OAuth coming soon...")
+
+        with col_gh:
+            if st.button("🐙 GitHub", use_container_width=True, key="github_login"):
+                st.info("GitHub Login coming soon...")
 
 with col3:
     st.markdown("### 📊 Stats")
@@ -634,3 +645,4 @@ st.markdown(
     "© 2026 Vasuki AI 4.0 - All Rights Reserved</div>",
     unsafe_allow_html=True
 )
+# ===== FOOTER END =====
