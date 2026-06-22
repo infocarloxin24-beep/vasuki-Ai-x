@@ -399,11 +399,11 @@ with tab1:
                         claimed_country=claimed_country, ip_country=ip_country, tweet_text=tweet_text
                     )
 
-                    # FEATURE 5: SIMILARITY SCORE ADD - ENGLISH VERSION
+                    # FEATURE 5: SIMILARITY SCORE ADD - FIXED LOGIC
                     if is_duplicate_scan:
                         st.warning("⚠️ Duplicate Scan Detected: This exact account + content was scanned before. Please change username or content for new scan.")
                     elif max_similarity > 85 and matched_username:
-                        score += 40
+                        score = 100 # FORCE 100% BOT - Ab Human nahi dikhega
                         reasons.append(f"Coordinated Bot: {max_similarity:.1f}% text match with {matched_username}")
                     elif max_similarity > 70 and matched_username:
                         score += 20
@@ -741,7 +741,7 @@ with col2:
             # GOOGLE + GITHUB OAUTH - API KE LIYE READY
             st.markdown("""
             <style>
-          .social-btn {
+        .social-btn {
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -758,18 +758,18 @@ with col2:
                 transition: all 0.2s;
                 text-decoration: none;
             }
-          .social-btn:hover {
+        .social-btn:hover {
                 background: #f8f9fa;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
-          .social-btn img {
+        .social-btn img {
                 width: 20px;
                 height: 20px;
             }
             </style>
             """, unsafe_allow_html=True)
 
-            # SUPABASE OAUTH URLS - Apna project URL daal dena
+            # SUPABASE OAUTH URLS
             SUPABASE_URL = st.secrets["SUPABASE_URL"]
             google_oauth_url = f"{SUPABASE_URL}/auth/v1/authorize?provider=google"
             github_oauth_url = f"{SUPABASE_URL}/auth/v1/authorize?provider=github"
