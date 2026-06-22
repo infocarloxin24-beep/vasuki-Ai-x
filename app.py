@@ -597,6 +597,6 @@ with col3:
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #666;'>🐍 Version Vasuki Ai 4.0 | Built by Nishad Singh 🇮🇳 | Made in Bharat<br>"
-    "© 2026 Ashu ki AI 4.0 - All Rights Reserved</div>",
+    "© 2026 Vasuki AI 4.0 - All Rights Reserved</div>",
     unsafe_allow_html=True
 )
