@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 from supabase import create_client, Client
-from datetime import datetime
+from datetime import datetime, timedelta
 import random
 import pandas as pd
 import time
@@ -9,6 +9,7 @@ import re
 import pytz
 import pycountry
 from bs4 import BeautifulSoup
+from difflib import SequenceMatcher
 
 # SECRETS SE TOKEN LO
 ADMIN_PASS = st.secrets.get("ADMIN_PASS", "admin123")
@@ -16,6 +17,30 @@ X_BEARER_TOKEN = st.secrets.get("X_BEARER_TOKEN")
 
 if 'admin' not in st.session_state:
     st.session_state.admin = False
+
+# FEATURE 1: MATHEMATICAL DAILY LIMIT
+if "user_scans" not in st.session_state:
+    st.session_state.user_scans = 0
+if "scan_date" not in st.session_state:
+    st.session_state.scan_date = datetime.now().date()
+
+# Reset daily count if new day
+if st.session_state.scan_date!= datetime.now().date():
+    st.session_state.user_scans = 0
+    st.session_state.scan_date = datetime.now().date()
+
+# FEATURE 2 & 5: SEQUENCE MATCHER + TEXT SIMILARITY CHECK
+def check_text_similarity(text1, text2):
+    if not text1 or not text2:
+        return 0
+    similarity_score = SequenceMatcher(None, text1.lower(), text2.lower()).ratio() * 100
+    return similarity_score
+
+# FEATURE 3: CALCULATE TPD
+def calculate_tpd(total_posts, account_age_days):
+    if account_age_days <= 0: return 0
+    tpd = round(total_posts / account_age_days, 2)
+    return tpd
 
 # 195 COUNTRIES LIST - FIX
 def get_all_countries():
@@ -33,7 +58,7 @@ def get_countries_with_tz():
             if tz_list:
                 tz = pytz.timezone(tz_list[0])
                 offset = datetime.now(tz).strftime('%z')
-                offset = f"{offset[:3]}:{offset[3:]}" # +0530 -> +05:30
+                offset = f"{offset[:3]}:{offset[3:]}"
                 countries[country.name] = {
                     "flag": country.flag if hasattr(country, 'flag') else "🏳️",
                     "tz": tz_list[0],
@@ -49,12 +74,12 @@ COUNTRIES_TZ = get_countries_with_tz()
 
 # DROPDOWN KE LIYE DISPLAY LIST BANADO + MAPPING
 COUNTRY_DISPLAY_LIST = []
-DISPLAY_TO_NAME_MAP = {} # ✅ FIX 1: Display se name nikalne ke liye map
+DISPLAY_TO_NAME_MAP = {}
 for name, data in sorted(COUNTRIES_TZ.items()):
     tz_abbr = data['tz'].split('/')[-1].replace('_', ' ')
     display_str = f"{data['flag']} {name} ({tz_abbr}) UTC{data['utc']}"
     COUNTRY_DISPLAY_LIST.append(display_str)
-    DISPLAY_TO_NAME_MAP[display_str] = name # ✅ Map banao
+    DISPLAY_TO_NAME_MAP[display_str] = name
 
 # X API + NITTER DONO - AUTOMATIC FALLBACK
 def fetch_x_data(username):
@@ -90,23 +115,27 @@ def fetch_x_data(username):
     except: return None
     return None
 
-# ✅ UPDATED FUNCTION - IP COUNTRY WAPAS ADD KIYA
+# UPDATED FUNCTION - IP COUNTRY WAPAS ADD KIYA + SIMILARITY CHECK
 def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, account_age=0,
                          tweet_time="", user_view_country="", claimed_country="", ip_country="", tweet_text=""):
     score = 0
     reasons = []
-    tpd = tweet_count / max(account_age, 1)
+
+    # FEATURE 3: TPD CALCULATION
+    tpd = calculate_tpd(tweet_count, account_age)
     if tpd > 50:
         score += 25
-        if st.session_state.admin: reasons.append(f"Roz {int(tpd)} tweet - Bot speed")
+        if st.session_state.admin: reasons.append(f"Roz {tpd} tweet - Bot speed")
     elif tpd > 20:
         score += 10
-        if st.session_state.admin: reasons.append(f"Roz {int(tpd)} tweet - Suspicious")
+        if st.session_state.admin: reasons.append(f"Roz {tpd} tweet - Suspicious")
+
     if tweet_text and len(tweet_text) > 50:
         spelling_errors = len(re.findall(r'\b[a-z]{1,2}\b', tweet_text.lower()))
         if spelling_errors == 0:
             score += 10
             if st.session_state.admin: reasons.append("0 Spelling mistake - Bot accurate")
+
     numbers = len(re.findall(r'\d', username))
     if numbers >= 8:
         score += 15
@@ -115,7 +144,7 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
         score += 20
         if st.session_state.admin: reasons.append("Fake/Bot jaisa username")
 
-    # ✅ TIME CHECK + COUNTRY MISMATCH - IP_COUNTRY USE KIYA
+    # TIME CHECK + COUNTRY MISMATCH - IP_COUNTRY USE KIYA
     if tweet_time and user_view_country and claimed_country and ip_country:
         try:
             tweet_hour, tweet_min = map(int, tweet_time.split(":"))
@@ -125,7 +154,6 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
                 user_tz_str = COUNTRIES_TZ[user_country_name]["tz"]
                 user_tz = pytz.timezone(user_tz_str)
 
-                # Claimed country ka timezone
                 if claimed_country == "Unknown":
                     claimed_tz_str = 'Asia/Kolkata'
                 elif claimed_country in COUNTRIES_TZ:
@@ -134,7 +162,6 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
                     claimed_tz_str = 'Asia/Kolkata'
                 claimed_tz = pytz.timezone(claimed_tz_str)
 
-                # User ka time → UTC → Claimed country ka time
                 today = datetime.now().date()
                 user_dt = user_tz.localize(datetime(today.year, today.month, today.day, tweet_hour, tweet_min))
                 claimed_dt = user_dt.astimezone(claimed_tz)
@@ -144,7 +171,6 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
                     score += 15
                     if st.session_state.admin: reasons.append(f"{claimed_country} me raat {country_hour}:00 baje tweet - Suspicious")
 
-                # ✅ COUNTRY MISMATCH = +60 SCORE - IP_COUNTRY SE CHECK
                 if claimed_country == "Unknown":
                     if st.session_state.admin: reasons.append("Location Not Claimed - Mismatch Check Skipped")
                 elif ip_country.lower()!= claimed_country.lower():
@@ -162,6 +188,7 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
     if tweet_text and re.search(r'(.{10,})\1{3,}', tweet_text):
         score += 15
         if st.session_state.admin: reasons.append("Copy-paste pattern - Bot signature")
+
     return min(score, 100), reasons
 
 # PURI DUNIYA KE 195 COUNTRY - COMPACT GRID
@@ -204,6 +231,13 @@ supabase: Client = create_client(url, key)
 st.set_page_config(page_title="Vasuki Ai 4.0 - Bot Detector", page_icon="🐍", layout="wide")
 st.title("🐍 Vasuki Ai 4.0 - Universal Bot Detector")
 st.caption("Multi-Platform Account & Text Scanner | Powered by AI")
+
+# FEATURE 1: DAILY LIMIT CALCULATION
+try:
+    today_count = supabase.table("scans").select("id", count="exact").gte("created_at", datetime.now().date().isoformat()).execute()
+    DAILY_LIMIT = 20 if today_count.count < 500 else 10
+except:
+    DAILY_LIMIT = 20
 
 st.info("⚠️ Disclaimer: This tool provides an AI-assisted probability estimate and should not be treated as definitive proof.")
 
@@ -262,7 +296,6 @@ with tab1:
         with col2:
             account_age_days = st.number_input("Account Age (Days)", 0, value=0)
 
-        # ✅ NAYA TIME + COUNTRY SELECTOR - FLAG KE SAATH
         st.markdown("*📍 Tweet Timing Details:*")
         col3, col4 = st.columns([1,2])
         with col3:
@@ -277,121 +310,163 @@ with tab1:
 
         claimed_country = st.selectbox(
             "Claimed Country (User ne bio mein kya likha hai)",
-            ["Unknown"] + ALL_COUNTRIES, # ✅ Unknown add kiya
+            ["Unknown"] + ALL_COUNTRIES,
             key="claimed_country"
         )
 
         ip_country = st.selectbox(
-            "Real IP Country (API se mila)", # ✅ IP Country wapas add kiya
+            "Real IP Country (API se mila)",
             ALL_COUNTRIES,
             key="ip_country"
         )
 
     if st.button("🚀 Scan Karo"):
-        if username or (scan_mode == "Manual - Khud bharo" and tweet_text):
-            clean_username = username if username.startswith("@") or "http" in username else f"@{username}"
-            if not username and tweet_text:
-                clean_username = "Anonymous Text"
-
-            with st.spinner(f"Vasuki Ai Brain Scanning {platform} data... 🧠"):
-                if scan_mode == "Auto - X API/Nitter se data lao" and platform == "Twitter / X":
-                    x_data = fetch_x_data(clean_username)
-                    if x_data:
-                        bio = x_data.get('bio', '')
-                        is_verified = x_data.get('is_verified', False)
-                        tweet_count = int(x_data.get('tweet_count', 0)) if str(x_data.get('tweet_count', 0)).isdigit() else 0
-                        account_age_days = x_data.get('account_age', 0)
-                        st.success("✅ X API/Nitter se data mil gaya")
-                    else:
-                        st.warning("⚠️ Data nahi mila. Manual mode use karo.")
-
-                score, reasons = check_bot_score_gupt(
-                    username=clean_username, bio=bio, is_verified=is_verified, tweet_count=tweet_count,
-                    account_age=account_age_days, tweet_time=tweet_time, user_view_country=user_view_country,
-                    claimed_country=claimed_country, ip_country=ip_country, tweet_text=tweet_text
-                )
-
-                # ✅ FIX 3: THRESHOLD 50% + CLEAN IF-ELSE
-                is_bot = score >= 50
-                if is_bot:
-                    result_text = f"🤖 Bot Account - {score}% Match"
-                else:
-                    result_text = f"✅ Human - {100-score}% Safe"
-
-                tpd = int(tweet_count / max(account_age_days, 1))
-                verified_text = "✅ Verified" if is_verified else "❌ Unverified"
-
-                result = {
-                    "username": f"[{platform}] {clean_username}",
-                    "platform": platform,
-                    "scan_type": "Bot Check",
-                    "result": result_text,
-                    "country": claimed_country,
-                    "score": score,
-                    "tweet_count": tweet_count,
-                    "account_age": account_age_days,
-                    "tweet_time": tweet_time,
-                    "tpd": tpd,
-                    "flags": ", ".join(reasons) if reasons else "None",
-                    "is_verified": is_verified
-                }
-
-                try:
-                    supabase.table("scans").insert(result).execute()
-                    st.success("🎉 Scan Complete!")
-                    st.subheader("📊 Bot Probability Meter")
-                    st.progress(score/100)
-                    st.metric("Bot Score", f"{score}%", delta=f"{'Danger' if score>=70 else 'Suspicious' if score>=50 else 'Safe'}", delta_color="inverse")
-                    st.write(f"Verified Status: {verified_text}")
-
-                    if is_bot:
-                        st.error(f"🚨 RESULT: {result_text}")
-                        if st.session_state.admin and reasons:
-                            st.warning("Pakde Jaane Ke Karan:")
-                            for reason in reasons:
-                                st.write(f"• {reason}")
-                        st.warning(f"Action Recommended: {platform} par is account ko report/block karein.")
-                    else:
-                        st.success(f"💚 RESULT: {result_text}")
-                        st.write("यह कमेंट या अकाउंट पूरी तरह से सुरक्षित और मानवीय लग रहा है.")
-
-                    if tweet_time:
-                        st.write("🌍 World Timing Dashboard - 195 Countries")
-                        st.caption("🌙 = Raat 12-6 baje | ☀️ = Din ka time | Red Border = Raat | Green Border = Din")
-                        world_times = get_world_timing_grid_195(tweet_time)
-                        with st.expander(f"📊 Show All 195 Countries Timing", expanded=False):
-                            cols = st.columns(6)
-                            for idx, country in enumerate(world_times):
-                                col_idx = idx % 6
-                                with cols[col_idx]:
-                                    border_color = "#ef4444" if 0 <= country["hour"] <= 6 else "#22c55e"
-                                    st.markdown(f"""
-                                    <div style="
-                                        background: #1e293b;
-                                        border: 2px solid {border_color};
-                                        border-radius: 6px;
-                                        padding: 4px;
-                                        margin-bottom: 4px;
-                                        text-align: center;
-                                        font-size: 9px;
-                                        line-height: 1.1;
-                                    ">
-                                        <div style="font-size: 12px; margin-bottom: 1px;">
-                                            {country['flag']}
-                                        </div>
-                                        <div style="font-weight: bold; color: #e2e8f0; margin-bottom: 2px; font-size: 8px;">
-                                            {country['name'][:10]}
-                                        </div>
-                                        <div style="font-size: 11px; color: white;">
-                                            {country['time']} {country['icon']}
-                                        </div>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-
-                except Exception as e:
-                    st.error(f"Supabase Error: {e}")
+        # FEATURE 1: DAILY LIMIT CHECK
+        if st.session_state.user_scans >= DAILY_LIMIT:
+            st.error(f"🛑 Daily Limit Reached! Aaj ke {DAILY_LIMIT} scan complete ho gaye. Kal phir aana.")
+            st.info(f"💡 Server load heavy hai. Limit {DAILY_LIMIT} set hai taaki sab users use kar sakein.")
         else:
-            st.warning("⚠️ Scan karne ke liye Username ya Text daalna zaroori hai bhai!")
+            if username or (scan_mode == "Manual - Khud bharo" and tweet_text):
+                clean_username = username if username.startswith("@") or "http" in username else f"@{username}"
+                if not username and tweet_text:
+                    clean_username = "Anonymous Text"
+
+                with st.spinner(f"Vasuki Ai Brain Scanning {platform} data... 🧠"):
+                    if scan_mode == "Auto - X API/Nitter se data lao" and platform == "Twitter / X":
+                        x_data = fetch_x_data(clean_username)
+                        if x_data:
+                            bio = x_data.get('bio', '')
+                            is_verified = x_data.get('is_verified', False)
+                            tweet_count = int(x_data.get('tweet_count', 0)) if str(x_data.get('tweet_count', 0)).isdigit() else 0
+                            account_age_days = x_data.get('account_age', 0)
+                            st.success("✅ X API/Nitter se data mil gaya")
+                        else:
+                            st.warning("⚠️ Data nahi mila. Manual mode use karo.")
+
+                    # FEATURE 5: TEXT SIMILARITY CHECK WITH OLD TWEETS
+                    max_similarity = 0
+                    matched_tweet = ""
+                    if tweet_text:
+                        try:
+                            past_scans = supabase.table("scans").select("tweet_text").limit(100).execute()
+                            if past_scans.data:
+                                old_tweets = [s['tweet_text'] for s in past_scans.data if s.get('tweet_text')]
+                                for old in old_tweets:
+                                    if old and old!= tweet_text:
+                                        sim = check_text_similarity(tweet_text, old)
+                                        if sim > max_similarity:
+                                            max_similarity = sim
+                                            matched_tweet = old[:50] + "..."
+                        except: pass
+
+                    score, reasons = check_bot_score_gupt(
+                        username=clean_username, bio=bio, is_verified=is_verified, tweet_count=tweet_count,
+                        account_age=account_age_days, tweet_time=tweet_time, user_view_country=user_view_country,
+                        claimed_country=claimed_country, ip_country=ip_country, tweet_text=tweet_text
+                    )
+
+                    # FEATURE 5: SIMILARITY SCORE ADD
+                    if max_similarity > 85:
+                        score += 40
+                        reasons.append(f"Coordinated Bot: {max_similarity:.1f}% match with '{matched_tweet}'")
+                    elif max_similarity > 70:
+                        score += 20
+                        reasons.append(f"High Text Similarity: {max_similarity:.1f}%")
+
+                    score = min(score, 100)
+                    is_bot = score >= 50
+                    if is_bot:
+                        result_text = f"🤖 Bot Account - {score}% Match"
+                    else:
+                        result_text = f"✅ Human - {100-score}% Safe"
+
+                    tpd = calculate_tpd(tweet_count, account_age_days)
+                    verified_text = "✅ Verified" if is_verified else "❌ Unverified"
+
+                    result = {
+                        "username": f"[{platform}] {clean_username}",
+                        "platform": platform,
+                        "scan_type": "Bot Check",
+                        "result": result_text,
+                        "country": claimed_country,
+                        "score": score,
+                        "tweet_count": tweet_count,
+                        "account_age": account_age_days,
+                        "tweet_time": tweet_time,
+                        "tpd": tpd,
+                        "tweet_text": tweet_text,
+                        "flags": ", ".join(reasons) if reasons else "None",
+                        "is_verified": is_verified
+                    }
+
+                    try:
+                        supabase.table("scans").insert(result).execute()
+                        st.session_state.user_scans += 1
+                        st.success("🎉 Scan Complete!")
+                        st.info(f"📊 Aaj ke bache scans: {DAILY_LIMIT - st.session_state.user_scans} / {DAILY_LIMIT}")
+
+                        # FEATURE 4: DISPLAY EVIDENCE SHOW
+                        st.subheader("📊 Bot Probability Meter")
+                        st.progress(score/100)
+                        st.metric("Bot Score", f"{score}%", delta=f"{'Danger' if score>=70 else 'Suspicious' if score>=50 else 'Safe'}", delta_color="inverse")
+                        st.write(f"Verified Status: {verified_text}")
+
+                        if tpd > 18:
+                            st.error(f"🧠 **Mathematical Proof:** {account_age_days} din mein {tweet_count} post = {tpd} TPD")
+                            st.caption(f"6 saal tak bina chutti {tpd} post/day = Insaan ke liye namumkin. 100% Bot Activity.")
+
+                        if max_similarity > 80:
+                            st.error(f"🚨 **Coordinated Bot Pattern Detected!** Text Similarity: {max_similarity:.1f}%")
+                            st.warning("Alag account hone ke bawajood content same hai. 100% machine!")
+
+                        if is_bot:
+                            st.error(f"🚨 RESULT: {result_text}")
+                            if st.session_state.admin and reasons:
+                                st.warning("Pakde Jaane Ke Karan:")
+                                for reason in reasons:
+                                    st.write(f"• {reason}")
+                            st.warning(f"Action Recommended: {platform} par is account ko report/block karein.")
+                        else:
+                            st.success(f"💚 RESULT: {result_text}")
+                            st.write("Yeh account surakshit aur maanviy lag raha hai.")
+
+                        if tweet_time:
+                            st.write("🌍 World Timing Dashboard - 195 Countries")
+                            st.caption("🌙 = Raat 12-6 baje | ☀️ = Din ka time | Red Border = Raat | Green Border = Din")
+                            world_times = get_world_timing_grid_195(tweet_time)
+                            with st.expander(f"📊 Show All 195 Countries Timing", expanded=False):
+                                cols = st.columns(6)
+                                for idx, country in enumerate(world_times):
+                                    col_idx = idx % 6
+                                    with cols[col_idx]:
+                                        border_color = "#ef4444" if 0 <= country["hour"] <= 6 else "#22c55e"
+                                        st.markdown(f"""
+                                        <div style="
+                                            background: #1e293b;
+                                            border: 2px solid {border_color};
+                                            border-radius: 6px;
+                                            padding: 4px;
+                                            margin-bottom: 4px;
+                                            text-align: center;
+                                            font-size: 9px;
+                                            line-height: 1.1;
+                                        ">
+                                            <div style="font-size: 12px; margin-bottom: 1px;">
+                                                {country['flag']}
+                                            </div>
+                                            <div style="font-weight: bold; color: #e2e8f0; margin-bottom: 2px; font-size: 8px;">
+                                                {country['name'][:10]}
+                                            </div>
+                                            <div style="font-size: 11px; color: white;">
+                                                {country['time']} {country['icon']}
+                                            </div>
+                                        </div>
+                                        """, unsafe_allow_html=True)
+
+                    except Exception as e:
+                        st.error(f"Supabase Error: {e}")
+            else:
+                st.warning("⚠️ Scan karne ke liye Username ya Text daalna zaroori hai bhai!")
 
 with tab2:
     st.subheader("🌍 Country Mismatch Detector")
@@ -484,25 +559,39 @@ try:
 except Exception as e:
     st.sidebar.error(f"History load nahi hui: {str(e)[:50]}")
 
+# FEATURE 6 & 7: FOOTER WITH FEEDBACK + LOGIN/SIGNUP + COPYRIGHT
 st.markdown("---")
-col_left, col_right = st.columns([2, 1])
-with col_left:
-    st.markdown("### 📋 Instructions")
-    st.info("""
-    How to use:
-    1. Bot Check: Enter username and select platform to detect bots
-    2. Country Check: Verify if user's claimed country matches IP location
-    3. Manual Check: Paste text to check for spam patterns
-    4. History: View last 10 scans in the sidebar
-    """)
-with col_right:
-    st.markdown("### ⚙️ System Status")
-    try:
-        test_query = supabase.table("scans").select("id").limit(1).execute()
-        st.success("✅ Database Connected")
-    except:
-        st.error("❌ Database Error")
-    st.markdown("### 📊 Quick Stats")
+col1, col2, col3 = st.columns([2, 2, 1])
+
+with col1:
+    with st.expander("💬 Feedback Do"):
+        with st.form(key="feedback_footer", clear_on_submit=True):
+            user_name = st.text_input("Naam:", placeholder="Nishad Singh")
+            rating = st.slider("Rating:", 1, 5, 5)
+            user_suggestion = st.text_area("Suggestion:", placeholder="Kya improve karein?")
+            if st.form_submit_button("📢 Submit"):
+                if user_suggestion:
+                    try:
+                        supabase.table("feedback").insert({
+                            "name": user_name if user_name else "Anonymous",
+                            "rating": rating,
+                            "suggestion": user_suggestion,
+                            "timestamp": datetime.now().isoformat()
+                        }).execute()
+                        st.success("🎉 Thank you! Feedback saved.")
+                    except:
+                        st.error("Error saving feedback")
+
+with col2:
+    with st.expander("🔐 User Login / Sign Up"):
+        auth_mode = st.radio("Mode:", ["Login", "Sign Up"], horizontal=True)
+        email = st.text_input("Email:", key="auth_email")
+        password = st.text_input("Password:", type="password", key="auth_pass")
+        if st.button("Submit", key="auth_submit"):
+            st.info(f"{auth_mode} feature coming soon. Supabase Auth integrate hoga.")
+
+with col3:
+    st.markdown("### 📊 Stats")
     try:
         total_scans = supabase.table("scans").select("id", count="exact").execute()
         st.metric("Total Scans", total_scans.count if total_scans.count else 0)
@@ -511,6 +600,7 @@ with col_right:
 
 st.markdown("---")
 st.markdown(
-    "<div style='text-align: center; color: #666;'>🐍 Version Vasuki Ai 4.0 - Bot Detector | Built by Nishad Singh 🇮🇳 | Made in Bharat</div>",
+    "<div style='text-align: center; color: #666;'>🐍 Version Vasuki Ai 4.0 | Built by Nishad Singh 🇮🇳 | Made in Bharat<br>"
+    "© 2026 Ashu ki AI 4.0 - All Rights Reserved</div>",
     unsafe_allow_html=True
 )
