@@ -442,12 +442,36 @@ with tab1:
                 current_user_clean = clean_username_for_compare(clean_username)
 
                 if tweet_text and len(tweet_text.strip()) > 20:
-                    try:
-                       past_scans = supabase.table("scans").select("tweet_text, username").limit(100).execute()
+                   try:
+                    past_scans = supabase.table("scans").select("tweet_text, username").limit(100).execute()
+                except Exception as e:
+                    st.error(f"Supabase error: {e}")
+                    past_scans = None
                 
-                if past_scans.data:
-                    duplicate_found = False
-                    
+                duplicate_found = False
+                max_similarity = 0
+                matched_tweet = ""
+                matched_username = ""
+                
+                if past_scans and past_scans.data:
+                    for scan in past_scans.data:
+                        old_text = scan.get('tweet_text', '').strip()
+                        old_user = clean_username_for_compare(scan.get('username', ''))
+                        
+                        # Check 1: Exact same account + same content = Duplicate
+                        if old_text and old_text == tweet_text.strip() and old_user == current_user_clean:
+                            st.warning("⚠️ Duplicate Scan Detected")
+                            st.info("👇 Check the sidebar for the previous scan")
+                            duplicate_found = True
+                            break
+                        
+                        # Check 2: Different account but similar content
+                        if old_text and old_user != current_user_clean:
+                            similarity = SequenceMatcher(None, tweet_text.lower(), old_text.lower()).ratio() * 100
+                            if similarity > max_similarity:
+                                max_similarity = similarity
+                                matched_tweet = old_text[:50] + "..."
+                                matched_username = scan.get('username', '')
                     for scan in past_scans.data:
                         old_text = scan.get('tweet_text', '').strip()
                         old_user = clean_username_for_compare(scan.get('username', ''))
