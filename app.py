@@ -9,6 +9,7 @@ import re
 import pytz
 import pycountry
 from bs4 import BeautifulSoup
+from difflib import SequenceMatcher
 
 # SECRETS SE TOKEN LO
 ADMIN_PASS = st.secrets.get("ADMIN_PASS", "admin123")
@@ -17,14 +18,14 @@ X_BEARER_TOKEN = st.secrets.get("X_BEARER_TOKEN")
 if 'admin' not in st.session_state:
     st.session_state.admin = False
 
-# 195 COUNTRIES LIST - FIX
+# 195 COUNTRIES LIST
 def get_all_countries():
     countries_list = []
     for country in pycountry.countries:
         countries_list.append(country.name)
     return sorted(countries_list)
 
-# TIMEZONE WALE COUNTRIES - FLAG + UTC KE SAATH
+# TIMEZONE WALE COUNTRIES
 def get_countries_with_tz():
     countries = {}
     for country in pycountry.countries:
@@ -33,7 +34,7 @@ def get_countries_with_tz():
             if tz_list:
                 tz = pytz.timezone(tz_list[0])
                 offset = datetime.now(tz).strftime('%z')
-                offset = f"{offset[:3]}:{offset[3:]}" # +0530 -> +05:30
+                offset = f"{offset[:3]}:{offset[3:]}"
                 countries[country.name] = {
                     "flag": country.flag if hasattr(country, 'flag') else "🏳️",
                     "tz": tz_list[0],
@@ -47,16 +48,125 @@ def get_countries_with_tz():
 ALL_COUNTRIES = get_all_countries()
 COUNTRIES_TZ = get_countries_with_tz()
 
-# DROPDOWN KE LIYE DISPLAY LIST BANADO + MAPPING
 COUNTRY_DISPLAY_LIST = []
-DISPLAY_TO_NAME_MAP = {} # ✅ FIX 1: Display se name nikalne ke liye map
+DISPLAY_TO_NAME_MAP = {}
 for name, data in sorted(COUNTRIES_TZ.items()):
     tz_abbr = data['tz'].split('/')[-1].replace('_', ' ')
     display_str = f"{data['flag']} {name} ({tz_abbr}) UTC{data['utc']}"
     COUNTRY_DISPLAY_LIST.append(display_str)
-    DISPLAY_TO_NAME_MAP[display_str] = name # ✅ Map banao
+    DISPLAY_TO_NAME_MAP[display_str] = name
 
-# X API + NITTER DONO - AUTOMATIC FALLBACK
+# ✅ TEXT PATTERN ANALYSIS - CAPITAL/SMALL + ALIGNMENT
+def analyze_text_pattern(text):
+    if not text or len(text) < 20:
+        return 0, [], {}
+
+    score = 0
+    reasons = []
+    details = {}
+
+    # 1. Capital/Small Mix Check
+    total_chars = len(re.findall(r'[a-zA-Z]', text))
+    if total_chars > 0:
+        caps_count = len(re.findall(r'[A-Z]', text))
+        caps_ratio = caps_count / total_chars
+        details['caps_ratio'] = f"{caps_ratio:.2f}"
+
+        if caps_ratio == 0 or caps_ratio > 0.95:
+            score += 25
+            reasons.append("Perfect Capitalization - Machine typed")
+            details['caps_flag'] = "Bot: All caps or all small"
+        elif 0.05 < caps_ratio < 0.4:
+            details['caps_flag'] = "Human: Natural mix"
+
+    # 2. Spacing Alignment
+    lines = [line for line in text.split('\n') if line.strip()]
+    if len(lines) > 2:
+        line_lengths = [len(line) for line in lines]
+        avg_len = sum(line_lengths) / len(line_lengths)
+        variance = sum((x - avg_len) ** 2 for x in line_lengths) / len(line_lengths)
+        details['alignment_variance'] = f"{variance:.1f}"
+        if variance < 10:
+            score += 20
+            reasons.append("Perfect Line Alignment - Bot formatting")
+            details['alignment_flag'] = "Bot: Too perfect"
+        else:
+            details['alignment_flag'] = "Human: Natural variance"
+
+    # 3. Punctuation Pattern
+    dots = text.count('.')
+    commas = text.count(',')
+    exclaim = text.count('!')
+    question = text.count('?')
+    total_punct = dots + commas + exclaim + question
+    details['punctuation'] = f".={dots}, ={commas},!={exclaim},?={question}"
+    if total_punct > 5 and dots == total_punct:
+        score += 15
+        reasons.append("Robotic Punctuation - Only periods used")
+
+    # 4. Emoji Overuse
+    emoji_count = len(re.findall(r'[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F900-\U0001F9FF]', text))
+    details['emoji_count'] = emoji_count
+    if emoji_count > 10:
+        score += 10
+        reasons.append(f"Emoji Spam: {emoji_count} emojis - Bot template")
+
+    # 5. Repeated Words
+    words = text.lower().split()
+    if len(words) > 10:
+        word_freq = {}
+        for word in words:
+            if len(word) > 4:
+                word_freq[word] = word_freq.get(word, 0) + 1
+        max_repeat = max(word_freq.values()) if word_freq else 0
+        details['max_word_repeat'] = max_repeat
+        if max_repeat > 5:
+            score += 15
+            reasons.append(f"Word Repetition: '{max(word_freq, key=word_freq.get)}' {max_repeat}x - Bot loop")
+
+    return min(score, 100), reasons, details
+
+# ✅ BIO DEEP SCAN
+def analyze_bio(bio):
+    if not bio:
+        return 0, [], {}
+
+    score = 0
+    reasons = []
+    details = {}
+    bio_lower = bio.lower()
+
+    # AI Phrases
+    ai_phrases = ['as an ai', 'i am an ai', 'i cannot', 'language model', 'i do not have personal', 'i am not able to', 'as a large language']
+    for phrase in ai_phrases:
+        if phrase in bio_lower:
+            score += 40
+            reasons.append(f"AI Disclosure: '{phrase}' - 100% Bot")
+            details['ai_phrase_found'] = phrase
+            break
+
+    # Template Bio
+    if re.match(r'^[A-Z][a-z]+ \| [A-Z][a-z]+ \| [A-Z][a-z]+$', bio.strip()):
+        score += 20
+        reasons.append("Template Bio: Word | Word | Word format - Bot generated")
+        details['template_bio'] = "Yes"
+
+    # Link Spam
+    links = len(re.findall(r'http[s]?://|t\.me/|discord\.gg/|bit\.ly/', bio_lower))
+    details['link_count'] = links
+    if links >= 3:
+        score += 15
+        reasons.append(f"Link Spam: {links} links in bio - Promo bot")
+
+    # Hashtag Spam
+    hashtags = len(re.findall(r'#\w+', bio))
+    details['hashtag_count'] = hashtags
+    if hashtags > 8:
+        score += 10
+        reasons.append(f"Hashtag Spam: {hashtags} tags - SEO bot")
+
+    return score, reasons, details
+
 def fetch_x_data(username):
     username = username.replace("@", "").strip()
     if X_BEARER_TOKEN:
@@ -90,32 +200,44 @@ def fetch_x_data(username):
     except: return None
     return None
 
-# ✅ UPDATED FUNCTION - IP COUNTRY WAPAS ADD KIYA
 def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, account_age=0,
                          tweet_time="", user_view_country="", claimed_country="", ip_country="", tweet_text=""):
     score = 0
     reasons = []
+    forensics = {}
     tpd = tweet_count / max(account_age, 1)
+    forensics['tpd'] = round(tpd, 2)
+
     if tpd > 50:
         score += 25
-        if st.session_state.admin: reasons.append(f"Roz {int(tpd)} tweet - Bot speed")
+        reasons.append(f"Roz {int(tpd)} tweet - Bot speed")
     elif tpd > 20:
         score += 10
-        if st.session_state.admin: reasons.append(f"Roz {int(tpd)} tweet - Suspicious")
-    if tweet_text and len(tweet_text) > 50:
-        spelling_errors = len(re.findall(r'\b[a-z]{1,2}\b', tweet_text.lower()))
-        if spelling_errors == 0:
-            score += 10
-            if st.session_state.admin: reasons.append("0 Spelling mistake - Bot accurate")
+        reasons.append(f"Roz {int(tpd)} tweet - Suspicious")
+
+    # ✅ TEXT PATTERN ANALYSIS
+    if tweet_text:
+        text_score, text_reasons, text_details = analyze_text_pattern(tweet_text)
+        score += text_score
+        reasons.extend(text_reasons)
+        forensics['text_analysis'] = text_details
+
+    # ✅ BIO DEEP SCAN
+    if bio:
+        bio_score, bio_reasons, bio_details = analyze_bio(bio)
+        score += bio_score
+        reasons.extend(bio_reasons)
+        forensics['bio_analysis'] = bio_details
+
     numbers = len(re.findall(r'\d', username))
+    forensics['username_numbers'] = numbers
     if numbers >= 8:
         score += 15
-        if st.session_state.admin: reasons.append("8+ number username - Auto generated")
+        reasons.append("8+ number username - Auto generated")
     if re.search(r'user\d+|bot\d+|temp\d+|test\d+', username.lower()):
         score += 20
-        if st.session_state.admin: reasons.append("Fake/Bot jaisa username")
+        reasons.append("Fake/Bot jaisa username")
 
-    # ✅ TIME CHECK + COUNTRY MISMATCH - IP_COUNTRY USE KIYA
     if tweet_time and user_view_country and claimed_country and ip_country:
         try:
             tweet_hour, tweet_min = map(int, tweet_time.split(":"))
@@ -125,7 +247,6 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
                 user_tz_str = COUNTRIES_TZ[user_country_name]["tz"]
                 user_tz = pytz.timezone(user_tz_str)
 
-                # Claimed country ka timezone
                 if claimed_country == "Unknown":
                     claimed_tz_str = 'Asia/Kolkata'
                 elif claimed_country in COUNTRIES_TZ:
@@ -134,37 +255,35 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
                     claimed_tz_str = 'Asia/Kolkata'
                 claimed_tz = pytz.timezone(claimed_tz_str)
 
-                # User ka time → UTC → Claimed country ka time
                 today = datetime.now().date()
                 user_dt = user_tz.localize(datetime(today.year, today.month, today.day, tweet_hour, tweet_min))
                 claimed_dt = user_dt.astimezone(claimed_tz)
                 country_hour = claimed_dt.hour
+                forensics['claimed_country_hour'] = country_hour
 
                 if 0 <= country_hour <= 6:
                     score += 15
-                    if st.session_state.admin: reasons.append(f"{claimed_country} me raat {country_hour}:00 baje tweet - Suspicious")
+                    reasons.append(f"{claimed_country} me raat {country_hour}:00 baje tweet - Suspicious")
 
-                # ✅ COUNTRY MISMATCH = +60 SCORE - IP_COUNTRY SE CHECK
                 if claimed_country == "Unknown":
-                    if st.session_state.admin: reasons.append("Location Not Claimed - Mismatch Check Skipped")
+                    reasons.append("Location Not Claimed - Mismatch Check Skipped")
                 elif ip_country.lower()!= claimed_country.lower():
                     score += 60
-                    if st.session_state.admin: reasons.append(f"Country Mismatch: {claimed_country} vs {ip_country} - High Risk")
+                    reasons.append(f"Country Mismatch: {claimed_country} vs {ip_country} - High Risk")
+                    forensics['country_mismatch'] = f"{claimed_country} vs {ip_country}"
         except Exception as e:
-            if st.session_state.admin: reasons.append(f"Time check error: {str(e)}")
+            reasons.append(f"Time check error: {str(e)}")
 
     if is_verified and numbers >= 4:
         score += 30
-        if st.session_state.admin: reasons.append("Verified Bot Loophole Detected")
-    if re.search(r'as an ai language model|i cannot|i\'m an ai|i am an ai', bio.lower()):
-        score += 40
-        if st.session_state.admin: reasons.append("Bio me AI phrases - Pakka bot")
+        reasons.append("Verified Bot Loophole Detected")
+
     if tweet_text and re.search(r'(.{10,})\1{3,}', tweet_text):
         score += 15
-        if st.session_state.admin: reasons.append("Copy-paste pattern - Bot signature")
-    return min(score, 100), reasons
+        reasons.append("Copy-paste pattern - Bot signature")
 
-# PURI DUNIYA KE 195 COUNTRY - COMPACT GRID
+    return min(score, 100), reasons, int(tpd), forensics
+
 def get_world_timing_grid_195(tweet_time_str):
     if not tweet_time_str:
         return []
@@ -248,11 +367,13 @@ with tab1:
     if scan_mode == "Manual - Khud bharo" or st.session_state.admin:
         st.info("Manual Mode: Fill all fields yourself")
         tweet_text = st.text_area(f"Paste suspicious {platform} post, comment or message here:",
-                                  placeholder="Paste suspicious comment, message, or post text here...")
+                                  placeholder="Paste suspicious comment, message, or post text here...",
+                                  height=150)
 
         bio = st.text_area("Bio / About:",
                           placeholder="Paste account bio here...",
-                          help="Bots often write 'I am an AI' in bio")
+                          help="Bots often write 'I am an AI' in bio",
+                          height=100)
 
         col1, col2 = st.columns(2)
         with col1:
@@ -262,8 +383,7 @@ with tab1:
         with col2:
             account_age_days = st.number_input("Account Age (Days)", 0, value=0)
 
-        # ✅ NAYA TIME + COUNTRY SELECTOR - FLAG KE SAATH
-        st.markdown("*📍 Tweet Timing Details:*")
+        st.markdown("📍 Tweet Timing Details:")
         col3, col4 = st.columns([1,2])
         with col3:
             tweet_time = st.text_input("Tweet time shown (HH:MM)", "14:30")
@@ -277,12 +397,12 @@ with tab1:
 
         claimed_country = st.selectbox(
             "Claimed Country (What user wrote in bio)",
-            ["Unknown"] + ALL_COUNTRIES, # ✅ Unknown add kiya
+            ["Unknown"] + ALL_COUNTRIES,
             key="claimed_country"
         )
 
         ip_country = st.selectbox(
-            "Real IP Country (From API)", # ✅ IP Country wapas add kiya
+            "Real IP Country (From API)",
             ALL_COUNTRIES,
             key="ip_country"
         )
@@ -305,20 +425,67 @@ with tab1:
                     else:
                         st.warning("⚠️ Data not found. Use Manual mode.")
 
-                score, reasons = check_bot_score_gupt(
+                # Text Similarity Check
+                max_similarity = 0
+                matched_tweet = ""
+                matched_username = ""
+                is_coordinated = False
+
+                def clean_username_for_compare(raw_username):
+                    if not raw_username:
+                        return ""
+                    username = str(raw_username).lower()
+                    username = re.sub(r'\[.*?\]', '', username)
+                    username = username.replace('@', '').strip()
+                    return username
+
+                current_user_clean = clean_username_for_compare(clean_username)
+
+                if tweet_text and len(tweet_text.strip()) > 20:
+                    try:
+                        past_scans = supabase.table("scans").select("tweet_text, username").limit(100).execute()
+                        if past_scans.data:
+                            for s in past_scans.data:
+                                old_text = s.get('tweet_text', '')
+                                old_user_raw = s.get('username', '')
+                                old_user_clean = clean_username_for_compare(old_user_raw)
+
+                                if old_text and old_text.strip() == tweet_text.strip() and old_user_clean == current_user_clean:
+                                    st.warning("⚠️ Duplicate Scan Detected: This exact account + content was scanned before.")
+                                    st.stop()
+                                elif old_text and old_user_clean!= current_user_clean:
+                                    sim = SequenceMatcher(None, tweet_text.lower(), old_text.lower()).ratio() * 100
+                                    if sim > max_similarity:
+                                        max_similarity = sim
+                                        matched_tweet = old_text[:50] + "..."
+                                        matched_username = old_user_raw
+                    except Exception as e:
+                        if st.session_state.admin: st.write(f"Similarity check error: {e}")
+
+                score, reasons, tpd, forensics = check_bot_score_gupt(
                     username=clean_username, bio=bio, is_verified=is_verified, tweet_count=tweet_count,
                     account_age=account_age_days, tweet_time=tweet_time, user_view_country=user_view_country,
                     claimed_country=claimed_country, ip_country=ip_country, tweet_text=tweet_text
                 )
 
-                # ✅ FIX 3: THRESHOLD 50% + CLEAN IF-ELSE
-                is_bot = score >= 50
+                # ✅ FIX 1: COORDINATED BOT = FORCE 100% BOT - NO CONTRADICTION
+                if max_similarity > 85 and matched_username:
+                    score = 100
+                    is_coordinated = True
+                    reasons.append(f"Coordinated Bot: {max_similarity:.1f}% text match with {matched_username}")
+                else:
+                    if max_similarity > 70 and matched_username:
+                        score += 20
+                        reasons.append(f"High Text Similarity: {max_similarity:.1f}% with {matched_username}")
+                    score = min(score, 100)
+
+                # ✅ FIX 2: RESULT LOGIC - COORDINATED = ALWAYS BOT
+                is_bot = score >= 50 or is_coordinated
                 if is_bot:
                     result_text = f"🤖 Bot Account - {score}% Match"
                 else:
                     result_text = f"✅ Human - {100-score}% Safe"
 
-                tpd = int(tweet_count / max(account_age_days, 1))
                 verified_text = "✅ Verified" if is_verified else "❌ Unverified"
 
                 result = {
@@ -332,6 +499,7 @@ with tab1:
                     "account_age": account_age_days,
                     "tweet_time": tweet_time,
                     "tpd": tpd,
+                    "tweet_text": tweet_text,
                     "flags": ", ".join(reasons) if reasons else "None",
                     "is_verified": is_verified
                 }
@@ -344,12 +512,73 @@ with tab1:
                     st.metric("Bot Score", f"{score}%", delta=f"{'Danger' if score>=70 else 'Suspicious' if score>=50 else 'Safe'}", delta_color="inverse")
                     st.write(f"Verified Status: {verified_text}")
 
-                    if is_bot:
-                        st.error(f"🚨 RESULT: {result_text}")
-                        if st.session_state.admin and reasons:
-                            st.warning("Detection Reasons:")
+                    # ✅ FORENSIC REPORT - FULL DETAIL
+                    with st.expander("🔬 Forensic Report - Full Detail", expanded=True):
+                        st.markdown("*📈 Statistical Analysis:*")
+                        col_f1, col_f2, col_f3 = st.columns(3)
+                        with col_f1:
+                            st.metric("TPD", forensics.get('tpd', 0))
+                            st.metric("Username Numbers", forensics.get('username_numbers', 0))
+                        with col_f2:
+                            st.metric("Account Age", f"{account_age_days} days")
+                            if 'claimed_country_hour' in forensics:
+                                st.metric("Claimed Country Time", f"{forensics['claimed_country_hour']}:00")
+                        with col_f3:
+                            st.metric("Total Posts", tweet_count)
+                            if 'country_mismatch' in forensics:
+                                st.error(f"Mismatch: {forensics['country_mismatch']}")
+
+                        if 'text_analysis' in forensics:
+                            st.markdown("*📝 Text Pattern Analysis:*")
+                            ta = forensics['text_analysis']
+                            st.write(f"• Caps Ratio: {ta.get('caps_ratio', 'N/A')} - {ta.get('caps_flag', 'N/A')}")
+                            st.write(f"• Alignment Variance: {ta.get('alignment_variance', 'N/A')} - {ta.get('alignment_flag', 'N/A')}")
+                            st.write(f"• Punctuation: {ta.get('punctuation', 'N/A')}")
+                            st.write(f"• Emoji Count: {ta.get('emoji_count', 0)}")
+                            st.write(f"• Max Word Repeat: {ta.get('max_word_repeat', 0)}x")
+
+                        if 'bio_analysis' in forensics:
+                            st.markdown("*👤 Bio Analysis:*")
+                            ba = forensics['bio_analysis']
+                            if 'ai_phrase_found' in ba:
+                                st.error(f"• AI Phrase Found: '{ba['ai_phrase_found']}'")
+                            if 'template_bio' in ba:
+                                st.warning("• Template Bio Detected")
+                            st.write(f"• Link Count: {ba.get('link_count', 0)}")
+                            st.write(f"• Hashtag Count: {ba.get('hashtag_count', 0)}")
+
+                        if reasons:
+                            st.markdown("*⚠️ Detection Flags:*")
                             for reason in reasons:
                                 st.write(f"• {reason}")
+
+                    # TPD PROOF BOX - DYNAMIC YEARS
+                    if account_age_days > 0 and tpd > 18 and score >= 50:
+                        years = round(account_age_days / 365, 1)
+                        months = round(account_age_days / 30, 1)
+                        weeks = round(account_age_days / 7, 1)
+
+                        st.error(f"🧠 Mathematical Proof: {account_age_days} days with {tweet_count} posts = {tpd} TPD")
+
+                        proof_messages = [
+                            f"Posting {tpd} times/day for {years} years straight without a single day off = Humanly impossible. Bot confirmed.",
+                            f"{years} years of non-stop {tpd} posts/day? No coffee breaks, no sleep? That's a bot schedule.",
+                            f"Even a full-time social media manager can't do {tpd} posts/day for {months} months. Bot Activity Detected.",
+                            f"{tpd} TPD for {weeks} weeks continuous = Machine behavior. Humans need weekends.",
+                            f"Reality check: {account_age_days} days × {tpd} posts = {tweet_count} total. No human maintains this pace for {years} years.",
+                            f"Forensics say: {tpd} TPD sustained for {years} years = 0% probability of human operation.",
+                            f"Statistically impossible: {years} years of daily {tpd} posts with zero gaps. This is automated.",
+                            f"Bot signature matched: {tpd} TPD sustained for {account_age_days} days = Beyond human limits."
+                        ]
+                        st.caption(random.choice(proof_messages))
+
+                    if is_coordinated:
+                        st.error(f"🚨 Coordinated Bot Pattern Detected! Text Similarity: {max_similarity:.1f}%")
+                        st.warning(f"Different accounts posting identical content. Matched with: {matched_username}")
+
+                    # ✅ FIX 3: RESULT NEVER CONTRADICT - COORDINATED = BOT
+                    if is_bot:
+                        st.error(f"🚨 RESULT: {result_text}")
                         st.warning(f"Action Recommended: Report/Block this account on {platform}.")
                     else:
                         st.success(f"💚 RESULT: {result_text}")
@@ -483,81 +712,3 @@ try:
         st.sidebar.info("No scans")
 except Exception as e:
     st.sidebar.error(f"History load failed: {str(e)[:50]}")
-
-# ===== FEEDBACK SECTION START - NAYA ADDED =====
-st.markdown("---")
-st.subheader("💬 Feedback Do")
-
-# SLIDER FORM KE BAHAR - Live update ke liye
-user_name = st.text_input("Naam:", placeholder="Nishad Singh", key="fb_name")
-rating = st.slider("Rating:", 1, 5, 5, key="fb_rating")
-
-# Emoji + Color logic - Tere hisaab se
-emoji_map = {
-    1: "😭", 2: "😟", 3: "😐", 4: "😊", 5: "😍"
-}
-color_map = {
-    1: "#FF4B4B", 2: "#FFA500", 3: "#FFD700", 4: "#90EE90", 5: "#00C851"
-}
-
-# Live preview - Slider ke saath change hoga
-st.markdown(
-    f"""
-    <div style='text-align: center; padding: 10px; border-radius: 10px; margin-bottom: 10px;
-                background-color: {color_map[rating]}; color: white; font-weight: bold;'>
-        {emoji_map[rating]} Rating: {rating}/5
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-# SIRF TEXT AREA + BUTTON FORM MEIN
-with st.form(key="feedback_form", clear_on_submit=True):
-    user_suggestion = st.text_area("Suggestion:", placeholder="Kya improve karein?", key="fb_sugg")
-
-    if st.form_submit_button("📢 Submit"):
-        if user_suggestion:
-            try:
-                supabase.table("feedback").insert({
-                    "name": user_name if user_name else "Anonymous",
-                    "rating": rating,
-                    "suggestion": user_suggestion
-                }).execute()
-                st.success(f"🎉 Thank you! {emoji_map[rating]} Feedback saved.")
-                st.balloons()
-            except Exception as e:
-                st.error(f"Error saving feedback: {e}")
-        else:
-            st.warning("Suggestion likho pehle")
-# ===== FEEDBACK SECTION END =====
-
-st.markdown("---")
-col_left, col_right = st.columns([2, 1])
-with col_left:
-    st.markdown("### 📋 Instructions")
-    st.info("""
-    How to use:
-    1. Bot Check: Enter username and select platform to detect bots
-    2. Country Check: Verify if user's claimed country matches IP location
-    3. Manual Check: Paste text to check for spam patterns
-    4. History: View last 10 scans in the sidebar
-    """)
-with col_right:
-    st.markdown("### ⚙️ System Status")
-    try:
-        test_query = supabase.table("scans").select("id").limit(1).execute()
-        st.success("✅ Database Connected")
-    except:
-        st.error("❌ Database Error")
-    st.markdown("### 📊 Quick Stats")
-    try:
-        total_scans = supabase.table("scans").select("id", count="exact").execute()
-        st.metric("Total Scans", total_scans.count if total_scans.count else 0)
-    except:
-        st.metric("Total Scans", "N/A")
-
-st.markdown("---")
-st.markdown(
-    "<div style='text-align: center; color: #666;'>🐍 Version Vasuki Ai 4.0 - Bot Detector | Built by Nishad Singh 🇮🇳 | Made in Bharat</div>",
-    unsafe_allow_html=True
-) # <-- FIXED: ) add kiya yahan
