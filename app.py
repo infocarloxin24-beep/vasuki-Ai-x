@@ -445,7 +445,7 @@ with tab1:
                     try:
                         past_scans = supabase.table("scans").select("tweet_text, username").limit(100).execute()
                         if past_scans.data:
-                           for s in past_scans.data:
+                          for s in past_scans.data:
                     old_text = s.get('tweet_text', '')
                     old_user_raw = s.get('username', '')
                     old_user_clean = clean_username_for_compare(old_user_raw)
