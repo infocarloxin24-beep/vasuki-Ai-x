@@ -450,9 +450,10 @@ with tab1:
                                 old_user_raw = s.get('username', '')
                                 old_user_clean = clean_username_for_compare(old_user_raw)
 
-                                if old_text and old_text.strip() == tweet_text.strip() and old_user_clean == current_user_clean:
-                                    st.warning("⚠️ Duplicate Scan Detected: This exact account + content was scanned before.")
-                                    st.stop()
+                               if old_text and old_text.strip() == tweet_text.strip() and old_user_clean == current_user_clean:
+    st.warning("⚠️ Duplicate Scan Detected: This exact account + content was scanned before.")
+    st.info("👇 Check the sidebar for the previous scan result or enter new content to scan")
+    return
                                 elif old_text and old_user_clean!= current_user_clean:
                                     sim = SequenceMatcher(None, tweet_text.lower(), old_text.lower()).ratio() * 100
                                     if sim > max_similarity:
