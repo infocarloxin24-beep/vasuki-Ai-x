@@ -443,24 +443,32 @@ with tab1:
 
                 if tweet_text and len(tweet_text.strip()) > 20:
                     try:
-                        past_scans = supabase.table("scans").select("tweet_text, username").limit(100).execute()
-                        if past_scans.data:
-                          for s in past_scans.data:
-                    old_text = s.get('tweet_text', '')
-                    old_user_raw = s.get('username', '')
-                    old_user_clean = clean_username_for_compare(old_user_raw)
-
-                    if old_text and old_text.strip() == tweet_text.strip() and old_user_clean == current_user_clean:
-                        st.warning("⚠️ Duplicate Scan Detected: This exact account + content was scanned before.")
-                        st.info("👇 Check the sidebar for the previous scan result or enter new content to scan")
-                        return
+                       past_scans = supabase.table("scans").select("tweet_text, username").limit(100).execute()
+                
+                if past_scans.data:
+                    duplicate_found = False
+                    
+                    for scan in past_scans.data:
+                        old_text = scan.get('tweet_text', '').strip()
+                        old_user = clean_username_for_compare(scan.get('username', ''))
                         
-                    elif old_text and old_user_clean != current_user_clean:
-                        sim = SequenceMatcher(None, tweet_text.lower(), old_text.lower()).ratio() * 100
-                        if sim > max_similarity:
-                            max_similarity = sim
-                            matched_tweet = old_text[:50] + "..."
-                            matched_username = old_user_raw
+                        # Check 1: Exact same account + same content = Duplicate
+                        if old_text and old_text == tweet_text.strip() and old_user == current_user_clean:
+                            st.warning("⚠️ Duplicate Scan Detected: This exact account + content was scanned before.")
+                            st.info("👇 Check the sidebar for the previous scan result or enter new content to scan")
+                            duplicate_found = True
+                            break
+                        
+                        # Check 2: Different account but similar content = Similarity
+                        if old_text and old_user != current_user_clean:
+                            similarity = SequenceMatcher(None, tweet_text.lower(), old_text.lower()).ratio() * 100
+                            if similarity > max_similarity:
+                                max_similarity = similarity
+                                matched_tweet = old_text[:50] + "..."
+                                matched_username = scan.get('username', '')
+                    
+                    if duplicate_found:
+                        return
                                         matched_tweet = old_text[:50] + "..."
                                         matched_username = old_user_raw
                     except Exception as e:
