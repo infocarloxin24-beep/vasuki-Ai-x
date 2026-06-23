@@ -81,7 +81,7 @@ def fetch_x_data(username):
         if r.status_code == 200:
             soup = BeautifulSoup(r.text, 'html.parser')
             bio = soup.find('div', class_='profile-bio')
-            bio = bio.text.strip() if bio else "Bio nahi mila"
+            bio = bio.text.strip() if bio else "Bio not found"
             followers = soup.find('a', href=f'/{username}/followers')
             followers = followers.text.split()[0] if followers else "0"
             tweets = soup.find('a', href=f'/{username}')
@@ -215,7 +215,7 @@ with st.sidebar:
                 st.session_state.admin = True
                 st.rerun()
             else:
-                st.error("Galat Password")
+                st.error("Wrong Password")
     else:
         st.success("Admin Mode: ON")
         if st.button("Logout"):
@@ -225,10 +225,10 @@ with st.sidebar:
 tab1, tab2 = st.tabs(["🔍 Bot Check", "🌍 Country Check"])
 
 with tab1:
-    st.subheader("Account or Post Scan Karo")
+    st.subheader("Scan Account or Post")
 
     platform = st.selectbox(
-        "सोशल मीडिया प्लेटफॉर्म चुनें (Select Platform):",
+        "Select Platform:",
         ["Twitter / X", "Facebook", "Instagram", "YouTube", "LinkedIn", "WhatsApp", "Other Platforms"]
     )
 
@@ -246,13 +246,13 @@ with tab1:
     bio = ""
 
     if scan_mode == "Manual - Khud bharo" or st.session_state.admin:
-        st.info("Manual Mode: Saare fields khud bharo")
-        tweet_text = st.text_area(f"{platform} का संदिग्ध पोस्ट, कमेंट या मैसेज यहाँ पेस्ट करें:",
+        st.info("Manual Mode: Fill all fields yourself")
+        tweet_text = st.text_area(f"Paste suspicious {platform} post, comment or message here:",
                                   placeholder="Paste suspicious comment, message, or post text here...")
 
         bio = st.text_area("Bio / About:",
-                          placeholder="Account ka bio yahan paste karo...",
-                          help="Bot aksar bio me 'I am an AI' likh dete hain")
+                          placeholder="Paste account bio here...",
+                          help="Bots often write 'I am an AI' in bio")
 
         col1, col2 = st.columns(2)
         with col1:
@@ -266,23 +266,23 @@ with tab1:
         st.markdown("*📍 Tweet Timing Details:*")
         col3, col4 = st.columns([1,2])
         with col3:
-            tweet_time = st.text_input("Tweet ka time jo dikh raha hai (HH:MM)", "14:30")
+            tweet_time = st.text_input("Tweet time shown (HH:MM)", "14:30")
         with col4:
             user_view_country = st.selectbox(
-                "Aap kis country se tweet dekh rahe ho?",
+                "Which country are you viewing this tweet from?",
                 COUNTRY_DISPLAY_LIST,
                 index=0,
-                help="Jo time aapne daala hai wo kis country ka time hai?"
+                help="The time you entered belongs to which country's timezone?"
             )
 
         claimed_country = st.selectbox(
-            "Claimed Country (User ne bio mein kya likha hai)",
+            "Claimed Country (What user wrote in bio)",
             ["Unknown"] + ALL_COUNTRIES, # ✅ Unknown add kiya
             key="claimed_country"
         )
 
         ip_country = st.selectbox(
-            "Real IP Country (API se mila)", # ✅ IP Country wapas add kiya
+            "Real IP Country (From API)", # ✅ IP Country wapas add kiya
             ALL_COUNTRIES,
             key="ip_country"
         )
@@ -301,9 +301,9 @@ with tab1:
                         is_verified = x_data.get('is_verified', False)
                         tweet_count = int(x_data.get('tweet_count', 0)) if str(x_data.get('tweet_count', 0)).isdigit() else 0
                         account_age_days = x_data.get('account_age', 0)
-                        st.success("✅ X API/Nitter se data mil gaya")
+                        st.success("✅ Data fetched from X API/Nitter")
                     else:
-                        st.warning("⚠️ Data nahi mila. Manual mode use karo.")
+                        st.warning("⚠️ Data not found. Use Manual mode.")
 
                 score, reasons = check_bot_score_gupt(
                     username=clean_username, bio=bio, is_verified=is_verified, tweet_count=tweet_count,
@@ -347,17 +347,17 @@ with tab1:
                     if is_bot:
                         st.error(f"🚨 RESULT: {result_text}")
                         if st.session_state.admin and reasons:
-                            st.warning("Pakde Jaane Ke Karan:")
+                            st.warning("Detection Reasons:")
                             for reason in reasons:
                                 st.write(f"• {reason}")
-                        st.warning(f"Action Recommended: {platform} par is account ko report/block karein.")
+                        st.warning(f"Action Recommended: Report/Block this account on {platform}.")
                     else:
                         st.success(f"💚 RESULT: {result_text}")
-                        st.write("यह कमेंट या अकाउंट पूरी तरह से सुरक्षित और मानवीय लग रहा है.")
+                        st.write("This account appears safe and human.")
 
                     if tweet_time:
                         st.write("🌍 World Timing Dashboard - 195 Countries")
-                        st.caption("🌙 = Raat 12-6 baje | ☀️ = Din ka time | Red Border = Raat | Green Border = Din")
+                        st.caption("🌙 = Night 12-6 AM local time | ☀️ = Day time | Red Border = Night | Green Border = Day")
                         world_times = get_world_timing_grid_195(tweet_time)
                         with st.expander(f"📊 Show All 195 Countries Timing", expanded=False):
                             cols = st.columns(6)
@@ -391,11 +391,11 @@ with tab1:
                 except Exception as e:
                     st.error(f"Supabase Error: {e}")
         else:
-            st.warning("⚠️ Scan karne ke liye Username ya Text daalna zaroori hai bhai!")
+            st.warning("⚠️ Username or Text is required to scan!")
 
 with tab2:
     st.subheader("🌍 Country Mismatch Detector")
-    st.write("Check karo ki user ne country sahi batayi hai ya fake hai")
+    st.write("Check if user claimed correct country or faking it")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -405,14 +405,14 @@ with tab2:
 
     username_cc = st.text_input("Username for reference:", placeholder="@username", key="cc_user")
 
-    if st.button("🔍 Country Check Karo"):
+    if st.button("🔍 Check Country"):
         if claimed == "Unknown":
             st.info("ℹ️ Location Not Claimed - Mismatch Check Skipped")
         elif claimed.lower()!= real_ip.lower():
             st.error(f"🚨 Mismatch Detected!")
             st.write(f"Claimed: {claimed}")
             st.write(f"Real IP: {real_ip}")
-            st.warning("Ye account VPN/Proxy use kar raha hai ya location fake hai.")
+            st.warning("This account is using VPN/Proxy or faking location.")
             result = {
                 "username": f"[CountryCheck] {username_cc}",
                 "platform": "Country Check",
@@ -429,11 +429,11 @@ with tab2:
             }
             try:
                 supabase.table("scans").insert(result).execute()
-                st.success("History me save ho gaya")
+                st.success("Saved to history")
             except:
-                st.error("History save nahi hui")
+                st.error("History save failed")
         else:
-            st.success(f"✅ Match! Dono country same hain: {claimed}")
+            st.success(f"✅ Match! Both countries same: {claimed}")
             st.balloons()
 
 st.sidebar.header("📜 Live Scan History")
@@ -482,7 +482,54 @@ try:
     else:
         st.sidebar.info("No scans")
 except Exception as e:
-    st.sidebar.error(f"History load nahi hui: {str(e)[:50]}")
+    st.sidebar.error(f"History load failed: {str(e)[:50]}")
+
+# ===== FEEDBACK SECTION START - NAYA ADDED =====
+st.markdown("---")
+st.subheader("💬 Feedback Do")
+
+# SLIDER FORM KE BAHAR - Live update ke liye
+user_name = st.text_input("Naam:", placeholder="Nishad Singh", key="fb_name")
+rating = st.slider("Rating:", 1, 5, 5, key="fb_rating")
+
+# Emoji + Color logic - Tere hisaab se
+emoji_map = {
+    1: "😭", 2: "😟", 3: "😐", 4: "😊", 5: "😍"
+}
+color_map = {
+    1: "#FF4B4B", 2: "#FFA500", 3: "#FFD700", 4: "#90EE90", 5: "#00C851"
+}
+
+# Live preview - Slider ke saath change hoga
+st.markdown(
+    f"""
+    <div style='text-align: center; padding: 10px; border-radius: 10px; margin-bottom: 10px;
+                background-color: {color_map[rating]}; color: white; font-weight: bold;'>
+        {emoji_map[rating]} Rating: {rating}/5
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# SIRF TEXT AREA + BUTTON FORM MEIN
+with st.form(key="feedback_form", clear_on_submit=True):
+    user_suggestion = st.text_area("Suggestion:", placeholder="Kya improve karein?", key="fb_sugg")
+
+    if st.form_submit_button("📢 Submit"):
+        if user_suggestion:
+            try:
+                supabase.table("feedback").insert({
+                    "name": user_name if user_name else "Anonymous",
+                    "rating": rating,
+                    "suggestion": user_suggestion
+                }).execute()
+                st.success(f"🎉 Thank you! {emoji_map[rating]} Feedback saved.")
+                st.balloons()
+            except Exception as e:
+                st.error(f"Error saving feedback: {e}")
+        else:
+            st.warning("Suggestion likho pehle")
+# ===== FEEDBACK SECTION END =====
 
 st.markdown("---")
 col_left, col_right = st.columns([2, 1])
@@ -513,4 +560,4 @@ st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #666;'>🐍 Version Vasuki Ai 4.0 - Bot Detector | Built by Nishad Singh 🇮🇳 | Made in Bharat</div>",
     unsafe_allow_html=True
-)
+) # <-- FIXED: ) add kiya yahan
