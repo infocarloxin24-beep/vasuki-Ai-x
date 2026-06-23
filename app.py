@@ -446,11 +446,11 @@ with tab1:
                         past_scans = supabase.table("scans").select("tweet_text, username").limit(100).execute()
                         if past_scans.data:
                             for s in past_scans.data:
-                                old_text = s.get('tweet_text', '')
-                                old_user_raw = s.get('username', '')
-                                old_user_clean = clean_username_for_compare(old_user_raw)
+    old_text = s.get('tweet_text', '')
+                old_user_raw = s.get('username', '')
+                old_user_clean = clean_username_for_compare(old_user_raw)
 
-                              if old_text and old_text.strip() == tweet_text.strip() and old_user_clean == current_user_clean:
+                if old_text and old_text.strip() == tweet_text.strip() and old_user_clean == current_user_clean:
                     st.warning("⚠️ Duplicate Scan Detected: This exact account + content was scanned before.")
                     st.info("👇 Check the sidebar for the previous scan result or enter new content to scan")
                     return
