@@ -923,7 +923,7 @@ with col_right:
         st.success("✅ Database Connected")
     except:
         st.error("❌ Database Error")
-    st.markdown("### 📊 Quick Stats")
+    st.markdown("### 📊 Quick Status")
     try:
         total_scans = supabase.table("scans").select("id", count="exact").execute()
         st.metric("Total Scans", total_scans.count if total_scans.count else 0)
