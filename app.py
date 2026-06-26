@@ -902,6 +902,6 @@ with col_right:
 
 st.markdown("---")
 st.markdown(
-    "<div style='text-align: center; color: #666; padding: 20px 0; font-size: 14px;'>🐍 Version Vasuki Ai 4.0 - Bot Detector | Built by Nishad Singh 🇮🇳 | Made in India | © 2026 All Rights Reserved</div>",
+    "<div style='text-align: center; color: #666; padding: 20px 0; font-size: 14px;'>🐍 Version Vasuki Ai 4.0 - Bot Detector | Made in India | © 2026 All Rights Reserved</div>",
     unsafe_allow_html=True
 )
