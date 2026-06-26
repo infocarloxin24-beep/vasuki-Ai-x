@@ -356,7 +356,7 @@ with tab1:
     scan_mode = st.radio("Scan Mode:", ["Auto - X /", "Manual - Fill it out yourself"])
 
     st.divider()
-    st.subheader("🧠 Vasuki AI 4.0 - Comment Scanner")
+    st.subheader("🧠 Comment Scanner")
     st.caption("2 comments compare karo - Bot network ya spam pakdo")
     
     col1, col2 = st.columns(2)
@@ -365,7 +365,7 @@ with tab1:
     with col2:
         comment2 = st.text_area("Comment 2", "Thanks for alpha sir", height=100, key="vsk_c2")
 
-    if st.button("🚨 Scan Bot Network", type="primary", use_container_width=True, key="vsk_btn"):
+    if st.button("🚨 Scan comment", type="primary", use_container_width=True, key="vsk_btn"):
         if not comment1 or not comment2:
             st.warning("Dono comments daal bhai")
         else:
