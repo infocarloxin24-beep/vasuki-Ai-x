@@ -366,9 +366,15 @@ with tab1:
 
     if scan_mode == "Manual - Khud bharo" or st.session_state.admin:
         st.info("Manual Mode: Fill all fields yourself")
-        tweet_text = st.text_area(f"Paste suspicious {platform} post, comment or message here:",
-                                  placeholder="Paste suspicious comment, message, or post text here...",
-                                  height=150)
+       # ===== 2 COMMENT BOX - OPTIONAL =====
+    st.markdown("*Paste suspicious comments to compare: (Optional)*")
+    col_c1, col_c2 = st.columns(2)
+    with col_c1:
+        comment1 = st.text_area("Comment 1", placeholder="Optional: Pehla comment...", height=120)
+    with col_c2:
+        comment2 = st.text_area("Comment 2", placeholder="Optional: Doosra comment...", height=120)
+    
+    bio = st.text_area("Bio / About:", placeholder="Paste account bio here...")
 
         bio = st.text_area("Bio / About:",
                           placeholder="Paste account bio here...",
