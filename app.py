@@ -419,7 +419,7 @@ with tab1:
             key="ip_country"
         )
 
-    if st.button("🚀 Scan Now"):
+    if st.button("🚀 Scan karo"):
         if username or (scan_mode == "Manual - Khud bharo" and (tweet_text or comment1 or comment2)):
             clean_username = username if username.startswith("@") or "http" in username else f"@{username}"
             if not username and (tweet_text or comment1 or comment2):
