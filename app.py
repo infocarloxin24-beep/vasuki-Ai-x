@@ -611,25 +611,40 @@ with tab1:
                             for reason in reasons:
                                 st.write(f"• {reason}")
 
-                    # TPD PROOF BOX - DYNAMIC YEARS
-                    if account_age_days > 0 and tpd > 18 and score >= 50:
+                    # TPD PROOF BOX - DYNAMIC YEARS + RANDOM MESSAGES
+                    if account_age_days > 0 and tpd > 18:
                         years = round(account_age_days / 365, 1)
                         months = round(account_age_days / 30, 1)
                         weeks = round(account_age_days / 7, 1)
 
                         st.error(f"🧠 Mathematical Proof: {account_age_days} days with {tweet_count} posts = {tpd} TPD")
 
-                        proof_messages = [
-                            f"Posting {tpd} times/day for {years} years straight without a single day off = Humanly impossible. Bot confirmed.",
-                            f"{years} years of non-stop {tpd} posts/day? No coffee breaks, no sleep? That's a bot schedule.",
-                            f"Even a full-time social media manager can't do {tpd} posts/day for {months} months. Bot Activity Detected.",
-                            f"{tpd} TPD for {weeks} weeks continuous = Machine behavior. Humans need weekends.",
-                            f"Reality check: {account_age_days} days × {tpd} posts = {tweet_count} total. No human maintains this pace for {years} years.",
-                            f"Forensics say: {tpd} TPD sustained for {years} years = 0% probability of human operation.",
-                            f"Statistically impossible: {years} years of daily {tpd} posts with zero gaps. This is automated.",
-                            f"Bot signature matched: {tpd} TPD sustained for {account_age_days} days = Beyond human limits."
-                        ]
-                        st.caption(random.choice(proof_messages))
+                        if score >= 50 or is_coordinated: # BOT CASE
+                            proof_messages = [
+                                f"Posting {tpd} times/day for {years} years straight without a single day off = Humanly impossible. Bot confirmed.",
+                                f"{years} years of non-stop {tpd} posts/day? No coffee breaks, no sleep? That's a bot schedule.",
+                                f"Even a full-time social media manager can't do {tpd} posts/day for {months} months. Bot Activity Detected.",
+                                f"{tpd} TPD for {weeks} weeks continuous = Machine behavior. Humans need weekends.",
+                                f"Reality check: {account_age_days} days × {tpd} posts = {tweet_count} total. No human maintains this pace for {years} years.",
+                                f"Forensics say: {tpd} TPD sustained for {years} years = 0% probability of human operation.",
+                                f"Statistically impossible: {years} years of daily {tpd} posts with zero gaps. This is automated.",
+                                f"Bot signature matched: {tpd} TPD sustained for {account_age_days} days = Beyond human limits.",
+                                f"Red flag: {years} years, {tpd} posts daily, zero holidays. Only machines work like this.",
+                                f"Data doesn't lie: {tpd}/day for {months} months = Automated spam pattern detected."
+                            ]
+                            st.caption(random.choice(proof_messages))
+                        else: # HUMAN CASE
+                            human_messages = [
+                                f"Posting {tpd} times/day for {years} years = Active user, but within human limits.",
+                                f"{tpd} TPD sustained for {months} months. Heavy usage, but natural patterns detected.",
+                                f"Verdict: {years} years of consistent {tpd} posts/day. Human activity confirmed.",
+                                f"Analysis: {tpd} TPD over {account_age_days} days. High engagement, likely genuine user.",
+                                f"Stats check: {years} years × {tpd} TPD = Busy but human. No bot signatures found.",
+                                f"Pattern normal: {months} months of {tpd} posts/day. Organic human behavior.",
+                                f"Forensics clear: {tpd} TPD for {weeks} weeks shows natural breaks. Human confirmed.",
+                                f"Result: {account_age_days} days, {tweet_count} posts = Active human user, not automated."
+                            ]
+                            st.caption(random.choice(human_messages))
 
                     if is_coordinated:
                         st.error(f"🚨 Coordinated Bot Pattern Detected! Text Similarity: {max_similarity:.1f}%")
@@ -672,6 +687,7 @@ with tab1:
                                         <div style="font-size: 11px; color: white;">
                                             {country['time']} {country['icon']}
                                         </div>
+                                    </div>
                                     """, unsafe_allow_html=True)
 
                 except Exception as e:
@@ -755,17 +771,4 @@ try:
                     {username_display} {score}% {verdict_icon}
                 </div>
                 <div>📊 Tweets/Day: {tpd}</div>
-                <div>📅 Account Age: {account_age} days</div>
-                <div>⏰ Last Tweet: {tweet_time}</div>
-                <div>📝 Total Posts: {total_posts}</div>
-                <div>Verified: {verified_text}</div>
-                <div style="margin-top: 4px;">⚠️ Flags:</div>
-                <div style="font-size: 10px; color: #94a3b8;">• {str(flags).replace(', ', '<br>• ')}</div>
-                <div style="color: #64748b; font-size: 9px; margin-top: 4px;">
-                    {time_display}
-                </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.sidebar.info("No scans")
-except Exception as e:
-    st.sidebar.error(f"History load failed: {str(e)[:50]}")
+                <
