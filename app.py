@@ -356,74 +356,44 @@ with tab1:
 
     is_verified = False
     tweet_count = 0
-   if scan_mode == "Manual - Khud bharo" or st.session_state.admin:
-    st.info("Manual Mode: Fill all fields yourself")
-    
-    # ===== 2 COMMENT BOX - OPTIONAL =====
-    st.markdown("*Paste suspicious comments to compare: (Optional)*")
-    col_c1, col_c2 = st.columns(2)
-    with col_c1:
-        comment1 = st.text_area("Comment 1", placeholder="Optional: Pehla comment...", height=120)
-    with col_c2:
-        comment2 = st.text_area("Comment 2", placeholder="Optional: Doosra comment...", height=120)
-    
-    bio = st.text_area("Bio / About:", placeholder="Paste account bio here...")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        verified_status = st.radio("Verified Status:", ["❌ Unverified", "✅ Verified"], horizontal=True)
-        is_verified = True if verified_status == "✅ Verified" else False
-        tweet_count = st.number_input("Total Tweets/Posts", 0, value=0)
-    with col2:
-        account_age_days = st.number_input("Account Age (Days)", 0, value=0)
-    
-    st.markdown("📍 Tweet Timing Details:")
-    col3, col4 = st.columns([1,2])
-    with col3:
-        tweet_time = st.text_input("Tweet time shown (HH:MM)", "14:30")
-    with col4:
-        user_view_country = st.selectbox(
-            "Which country are you viewing this tweet from?",
-            COUNTRY_DISPLAY_LIST,
-            index=0,
-            help="The time you entered belongs to which country's timezone?"
-        )
-    
-    if st.button("🚀 Scan Karo", type="primary", use_container_width=True):
-        st.divider()
-        st.subheader("📊 Scan Result")
+    if scan_mode == "Manual - Khud bharo" or st.session_state.admin:
+        st.info("Manual Mode: Fill all fields yourself")
         
-        # Brain Logic - Optional
-        if comment1 and comment2:
-            st.success("🧠 Vasuki Brain: Dono comment compare honge yahan")
-        elif comment1 or comment2:
-            st.info("🧠 Vasuki Brain: 1 comment ka basic check")
-        else:
-            st.info("Comment skip kiya gaya - Sirf manual fields se result")
+        st.markdown("**Paste suspicious comments to compare: (Optional)**")
+        col_c1, col_c2 = st.columns(2)
+        with col_c1:
+            comment1 = st.text_area("Comment 1", placeholder="Optional: Pehla comment...", height=120, key="c1")
+        with col_c2:
+            comment2 = st.text_area("Comment 2", placeholder="Optional: Doosra comment...", height=120, key="c2")
         
-        # Tera purana score logic
-        score = 0
-        if not is_verified: score += 20
-        if account_age_days < 30: score += 25
-        if tweet_count < 10: score += 15
-        
-        st.metric("Final Bot Score", f"{score}%")
-            verified_status = st.radio("Verified Status:", ["❌ Unverified", "✅ Verified"], horizontal=True)
-            is_verified = True if verified_status == "✅ Verified" else False
-            tweet_count = st.number_input("Total Tweets/Posts", 0, value=0)
-        with col2:
-            account_age_days = st.number_input("Account Age (Days)", 0, value=0)
+        tweet_text = st.text_area(f"Paste {platform} post/comment for pattern analysis: (Optional)",
+                                  placeholder="Optional: Single post ka analysis...",
+                                  height=100, key="ttext")
 
-        st.markdown("📍 Tweet Timing Details:")
+        bio = st.text_area("Bio / About:",
+                          placeholder="Paste account bio here...",
+                          help="Bots often write 'I am an AI' in bio",
+                          height=100, key="bio")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            verified_status = st.radio("Verified Status:", ["❌ Unverified", "✅ Verified"], horizontal=True, key="vstatus")
+            is_verified = True if verified_status == "✅ Verified" else False
+            tweet_count = st.number_input("Total Tweets/Posts", 0, value=0, key="tcount")
+        with col2:
+            account_age_days = st.number_input("Account Age (Days)", 0, value=0, key="age")
+
+        st.markdown("*📍 Tweet Timing Details:*")
         col3, col4 = st.columns([1,2])
         with col3:
-            tweet_time = st.text_input("Tweet time shown (HH:MM)", "14:30")
+            tweet_time = st.text_input("Tweet time shown (HH:MM)", "14:30", key="ttime")
         with col4:
             user_view_country = st.selectbox(
                 "Which country are you viewing this tweet from?",
                 COUNTRY_DISPLAY_LIST,
                 index=0,
-                help="The time you entered belongs to which country's timezone?"
+                help="The time you entered belongs to which country's timezone?",
+                key="vcountry"
             )
 
         claimed_country = st.selectbox(
@@ -437,15 +407,6 @@ with tab1:
             ALL_COUNTRIES,
             key="ip_country"
         )
-
-    if st.button("🚀 Scan Karo"):
-        if username or (scan_mode == "Manual - Khud bharo" and tweet_text):
-            clean_username = username if username.startswith("@") or "http" in username else f"@{username}"
-            if not username and tweet_text:
-                clean_username = "Anonymous Text"
-
-            with st.spinner(f"Vasuki Ai Brain Scanning {platform} data... 🧠"):
-                if scan_mode == "Auto - X API/Nitter se data lao" and platform == "Twitter / X":
                     x_data = fetch_x_data(clean_username)
                     if x_data:
                         bio = x_data.get('bio', '')
@@ -545,7 +506,7 @@ with tab1:
 
                     # ✅ FORENSIC REPORT - FULL DETAIL
                     with st.expander("🔬 Forensic Report - Full Detail", expanded=True):
-                        st.markdown("*📈 Statistical Analysis:*")
+                        st.markdown("**📈 Statistical Analysis:**")
                         col_f1, col_f2, col_f3 = st.columns(3)
                         with col_f1:
                             st.metric("TPD", forensics.get('tpd', 0))
@@ -560,7 +521,7 @@ with tab1:
                                 st.error(f"Mismatch: {forensics['country_mismatch']}")
 
                         if 'text_analysis' in forensics:
-                            st.markdown("*📝 Text Pattern Analysis:*")
+                            st.markdown("**📝 Text Pattern Analysis:**")
                             ta = forensics['text_analysis']
                             st.write(f"• Caps Ratio: {ta.get('caps_ratio', 'N/A')} - {ta.get('caps_flag', 'N/A')}")
                             st.write(f"• Alignment Variance: {ta.get('alignment_variance', 'N/A')} - {ta.get('alignment_flag', 'N/A')}")
@@ -569,7 +530,7 @@ with tab1:
                             st.write(f"• Max Word Repeat: {ta.get('max_word_repeat', 0)}x")
 
                         if 'bio_analysis' in forensics:
-                            st.markdown("*👤 Bio Analysis:*")
+                            st.markdown("**👤 Bio Analysis:**")
                             ba = forensics['bio_analysis']
                             if 'ai_phrase_found' in ba:
                                 st.error(f"• AI Phrase Found: '{ba['ai_phrase_found']}'")
@@ -579,7 +540,7 @@ with tab1:
                             st.write(f"• Hashtag Count: {ba.get('hashtag_count', 0)}")
 
                         if reasons:
-                            st.markdown("*⚠️ Detection Flags:*")
+                            st.markdown("**⚠️ Detection Flags:**")
                             for reason in reasons:
                                 st.write(f"• {reason}")
 
