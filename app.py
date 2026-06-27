@@ -10,7 +10,6 @@ import pytz
 import pycountry
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
-# VASUKI AI 4.0 BRAIN IMPORT
 
 # SECRETS SE TOKEN LO
 ADMIN_PASS = st.secrets.get("ADMIN_PASS", "admin123")
