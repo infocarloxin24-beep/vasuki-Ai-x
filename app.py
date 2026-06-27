@@ -356,17 +356,10 @@ with tab1:
 
     is_verified = False
     tweet_count = 0
-    account_age_days = 0
-    claimed_country = ""
-    user_view_country = ""
-    ip_country = ""
-    tweet_time = ""
-    tweet_text = ""
-    bio = ""
-
-    if scan_mode == "Manual - Khud bharo" or st.session_state.admin:
-        st.info("Manual Mode: Fill all fields yourself")
-       # ===== 2 COMMENT BOX - OPTIONAL =====
+   if scan_mode == "Manual - Khud bharo" or st.session_state.admin:
+    st.info("Manual Mode: Fill all fields yourself")
+    
+    # ===== 2 COMMENT BOX - OPTIONAL =====
     st.markdown("*Paste suspicious comments to compare: (Optional)*")
     col_c1, col_c2 = st.columns(2)
     with col_c1:
@@ -375,14 +368,46 @@ with tab1:
         comment2 = st.text_area("Comment 2", placeholder="Optional: Doosra comment...", height=120)
     
     bio = st.text_area("Bio / About:", placeholder="Paste account bio here...")
-
-        bio = st.text_area("Bio / About:",
-                          placeholder="Paste account bio here...",
-                          help="Bots often write 'I am an AI' in bio",
-                          height=100)
-
-        col1, col2 = st.columns(2)
-        with col1:
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        verified_status = st.radio("Verified Status:", ["❌ Unverified", "✅ Verified"], horizontal=True)
+        is_verified = True if verified_status == "✅ Verified" else False
+        tweet_count = st.number_input("Total Tweets/Posts", 0, value=0)
+    with col2:
+        account_age_days = st.number_input("Account Age (Days)", 0, value=0)
+    
+    st.markdown("📍 Tweet Timing Details:")
+    col3, col4 = st.columns([1,2])
+    with col3:
+        tweet_time = st.text_input("Tweet time shown (HH:MM)", "14:30")
+    with col4:
+        user_view_country = st.selectbox(
+            "Which country are you viewing this tweet from?",
+            COUNTRY_DISPLAY_LIST,
+            index=0,
+            help="The time you entered belongs to which country's timezone?"
+        )
+    
+    if st.button("🚀 Scan Karo", type="primary", use_container_width=True):
+        st.divider()
+        st.subheader("📊 Scan Result")
+        
+        # Brain Logic - Optional
+        if comment1 and comment2:
+            st.success("🧠 Vasuki Brain: Dono comment compare honge yahan")
+        elif comment1 or comment2:
+            st.info("🧠 Vasuki Brain: 1 comment ka basic check")
+        else:
+            st.info("Comment skip kiya gaya - Sirf manual fields se result")
+        
+        # Tera purana score logic
+        score = 0
+        if not is_verified: score += 20
+        if account_age_days < 30: score += 25
+        if tweet_count < 10: score += 15
+        
+        st.metric("Final Bot Score", f"{score}%")
             verified_status = st.radio("Verified Status:", ["❌ Unverified", "✅ Verified"], horizontal=True)
             is_verified = True if verified_status == "✅ Verified" else False
             tweet_count = st.number_input("Total Tweets/Posts", 0, value=0)
