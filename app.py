@@ -762,13 +762,4 @@ try:
                 border: 1px solid #1e293b;
                 border-radius: 8px;
                 padding: 8px;
-                margin-bottom: 8px;
-                font-size: 11px;
-                line-height: 1.4;
-                color: #e2e8f0;
-            ">
-                <div style="font-weight: bold; margin-bottom: 4px; color: white;">
-                    {username_display} {score}% {verdict_icon}
-                </div>
-                <div>📊 Tweets/Day: {tpd}</div>
-                <
+                margin-bottom:
