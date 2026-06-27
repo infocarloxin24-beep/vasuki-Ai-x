@@ -5,4 +5,4 @@ pytz
 pycountry
 beautifulsoup4
 supabase
-scikit-learn
+
