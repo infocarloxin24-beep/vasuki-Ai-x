@@ -369,7 +369,7 @@ with tab1:
     if scan_mode == "Manual - Khud bharo" or st.session_state.admin:
         st.info("Manual Mode: Fill all fields yourself")
 
-        # ===== 2 COMMENT BOX - OPTIONAL - BRAIN =====
+        # ===== 2 COMMENT BOX - VASUKI BRAIN - FIXED =====
         st.markdown("**Paste suspicious comments to compare: (Optional)**")
         col_c1, col_c2 = st.columns(2)
         with col_c1:
@@ -437,7 +437,7 @@ with tab1:
                     else:
                         st.warning("⚠️ Data not found. Use Manual mode.")
 
-                # ===== VASUKI BRAIN - 2 COMMENT COMPARISON =====
+                # ===== VASUKI BRAIN - COMMENT COMPARISON - FIXED =====
                 if comment1 and comment2:
                     fuzzy = round(SequenceMatcher(None, comment1, comment2).ratio() * 100, 2)
                     st.markdown("### 🧠 Vasuki Brain: Comment Comparison")
@@ -454,23 +454,38 @@ with tab1:
                     st.info("🧠 Basic check: Sirf 1 comment mila")
                     st.divider()
 
-                # Text Similarity Check
+                # ===== DUPLICATE USERNAME CHECK - FIXED =====
                 max_similarity = 0
                 matched_tweet = ""
                 matched_username = ""
                 is_coordinated = False
 
-                def clean_username_for_compare(raw_username):
-                    if not raw_username:
-                        return ""
+                def extract_clean_username(raw_username):
                     username = str(raw_username).lower()
                     username = re.sub(r'\[.*?\]', '', username)
                     username = username.replace('@', '').strip()
                     return username
 
-                current_user_clean = clean_username_for_compare(clean_username)
-                compare_text = comment1 if comment1 else tweet_text
+                current_user_clean = extract_clean_username(clean_username)
 
+                if current_user_clean and current_user_clean!= "anonymous text":
+                    try:
+                        all_scans = supabase.table("scans").select("username, score, created_at").execute()
+                        if all_scans.data:
+                            for scan in all_scans.data:
+                                db_user_clean = extract_clean_username(scan.get('username', ''))
+                                if db_user_clean == current_user_clean:
+                                    old_score = scan.get('score', 0)
+                                    old_date = scan.get('created_at', '')[:10]
+                                    st.error(f"🚨 DUPLICATE ACCOUNT: @{current_user_clean} already scanned on {old_date}")
+                                    st.warning(f"Previous Bot Score: {old_score}% | Re-scanning now...")
+                                    st.divider()
+                                    break
+                    except Exception as e:
+                        if st.session_state.admin: st.write(f"DB check error: {e}")
+
+                # Text similarity check with OTHER accounts
+                compare_text = comment1 if comment1 else tweet_text
                 if compare_text and len(compare_text.strip()) > 20:
                     try:
                         past_scans = supabase.table("scans").select("tweet_text, username").limit(100).execute()
@@ -478,10 +493,10 @@ with tab1:
                             for s in past_scans.data:
                                 old_text = s.get('tweet_text', '')
                                 old_user_raw = s.get('username', '')
-                                old_user_clean = clean_username_for_compare(old_user_raw)
+                                old_user_clean = extract_clean_username(old_user_raw)
 
                                 if old_text and old_text.strip() == compare_text.strip() and old_user_clean == current_user_clean:
-                                    st.warning("⚠️ Duplicate Scan Detected: This exact account + content was scanned before.")
+                                    st.error("🚨 EXACT DUPLICATE: Same account + same content scanned before.")
                                     st.stop()
                                 elif old_text and old_user_clean!= current_user_clean:
                                     sim = SequenceMatcher(None, compare_text.lower(), old_text.lower()).ratio() * 100
@@ -505,7 +520,7 @@ with tab1:
                         score += 30
                         reasons.append(f"Comment Match: {fuzzy}% - Coordinated spam")
 
-                # ✅ FIX 1: COORDINATED BOT = FORCE 100% BOT - NO CONTRADICTION
+                # COORDINATED BOT = FORCE 100% BOT
                 if max_similarity > 85 and matched_username:
                     score = 100
                     is_coordinated = True
@@ -516,7 +531,6 @@ with tab1:
                         reasons.append(f"High Text Similarity: {max_similarity:.1f}% with {matched_username}")
                     score = min(score, 100)
 
-                # ✅ FIX 2: RESULT LOGIC - COORDINATED = ALWAYS BOT
                 is_bot = score >= 50 or is_coordinated
                 if is_bot:
                     result_text = f"🤖 Bot Account - {score}% Match"
@@ -613,7 +627,6 @@ with tab1:
                         st.error(f"🚨 Coordinated Bot Pattern Detected! Text Similarity: {max_similarity:.1f}%")
                         st.warning(f"Different accounts posting identical content. Matched with: {matched_username}")
 
-                    # ✅ FIX 3: RESULT NEVER CONTRADICT - COORDINATED = BOT
                     if is_bot:
                         st.error(f"🚨 RESULT: {result_text}")
                         st.warning(f"Action Recommended: Report/Block this account on {platform}.")
