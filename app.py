@@ -438,14 +438,17 @@ with tab1:
                         st.warning("⚠️ Data not found. Use Manual mode.")
 
                 # ===== VASUKI BRAIN - COMMENT COMPARISON - FIXED =====
+                fuzzy = 0
+                force_bot = False
                 if comment1 and comment2:
                     fuzzy = round(SequenceMatcher(None, comment1, comment2).ratio() * 100, 2)
                     st.markdown("### 🧠 Vasuki Brain: Comment Comparison")
                     c1, c2, c3 = st.columns(3)
                     c1.metric("Fuzzy Match", f"{fuzzy}%")
-                    if fuzzy > 65:
+                    if fuzzy >= 65:
                         c2.metric("Risk", "HIGH 🚨")
                         st.error("**BOT DETECTED:** Comments 65%+ match. Spam activity.")
+                        force_bot = True
                     else:
                         c2.metric("Risk", "LOW ✅")
                         st.success("**SAFE:** Comments alag hain.")
@@ -454,7 +457,7 @@ with tab1:
                     st.info("🧠 Basic check: Sirf 1 comment mila")
                     st.divider()
 
-                # ===== DUPLICATE USERNAME CHECK - FIXED =====
+                # ===== DUPLICATE USERNAME CHECK - STRONG VERSION =====
                 max_similarity = 0
                 matched_tweet = ""
                 matched_username = ""
@@ -478,7 +481,8 @@ with tab1:
                                     old_score = scan.get('score', 0)
                                     old_date = scan.get('created_at', '')[:10]
                                     st.error(f"🚨 DUPLICATE ACCOUNT: @{current_user_clean} already scanned on {old_date}")
-                                    st.warning(f"Previous Bot Score: {old_score}% | Re-scanning now...")
+                                    st.warning(f"Previous Bot Score: {old_score}% | FORCING 100% BOT NOW")
+                                    force_bot = True
                                     st.divider()
                                     break
                     except Exception as e:
@@ -497,6 +501,7 @@ with tab1:
 
                                 if old_text and old_text.strip() == compare_text.strip() and old_user_clean == current_user_clean:
                                     st.error("🚨 EXACT DUPLICATE: Same account + same content scanned before.")
+                                    force_bot = True
                                     st.stop()
                                 elif old_text and old_user_clean!= current_user_clean:
                                     sim = SequenceMatcher(None, compare_text.lower(), old_text.lower()).ratio() * 100
@@ -514,14 +519,16 @@ with tab1:
                 )
 
                 # Add comment comparison to score
-                if comment1 and comment2:
-                    fuzzy = round(SequenceMatcher(None, comment1, comment2).ratio() * 100, 2)
-                    if fuzzy > 65:
-                        score += 30
-                        reasons.append(f"Comment Match: {fuzzy}% - Coordinated spam")
+                if comment1 and comment2 and fuzzy >= 65:
+                    reasons.append(f"Comment Match: {fuzzy}% - Coordinated spam")
+                    force_bot = True
 
-                # COORDINATED BOT = FORCE 100% BOT
-                if max_similarity > 85 and matched_username:
+                # ✅ FINAL OVERRIDE: DUPLICATE OR 100% MATCH = 100% BOT
+                if force_bot or (comment1 and comment2 and fuzzy == 100):
+                    score = 100
+                    is_coordinated = True
+                    reasons.append("FORCED BOT: Duplicate account or 100% comment match detected")
+                elif max_similarity > 85 and matched_username:
                     score = 100
                     is_coordinated = True
                     reasons.append(f"Coordinated Bot: {max_similarity:.1f}% text match with {matched_username}")
@@ -531,7 +538,8 @@ with tab1:
                         reasons.append(f"High Text Similarity: {max_similarity:.1f}% with {matched_username}")
                     score = min(score, 100)
 
-                is_bot = score >= 50 or is_coordinated
+                # ✅ RESULT LOGIC - NO CONTRADICTION
+                is_bot = score >= 50
                 if is_bot:
                     result_text = f"🤖 Bot Account - {score}% Match"
                 else:
@@ -664,7 +672,6 @@ with tab1:
                                         <div style="font-size: 11px; color: white;">
                                             {country['time']} {country['icon']}
                                         </div>
-                                    </div>
                                     """, unsafe_allow_html=True)
 
                 except Exception as e:
