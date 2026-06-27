@@ -770,8 +770,7 @@ try:
                 <div style="font-weight: bold; margin-bottom: 4px; color: white;">
                     {username_display} {score}% {verdict_icon}
                 </div>
-
-                    <div>📊 Tweets/Day: {tpd}</div>
+                 <div>📊 Tweets/Day: {tpd}</div>
                 <div>📅 Account Age: {account_age} days</div>
                 <div>⏰ Last Tweet: {tweet_time}</div>
                 <div>📝 Total Posts: {total_posts}</div>
