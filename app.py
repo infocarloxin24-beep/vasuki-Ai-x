@@ -352,7 +352,7 @@ with tab1:
     )
 
     username = st.text_input(f"{platform} Username / Profile Link:", placeholder="@username or paste profile URL")
-    scan_mode = st.radio("Scan Mode:", ["Auto - X /", "Manual -khud bharo"])
+    scan_mode = st.radio("Scan Mode:", ["Auto - X Nitter se data lao/", "Manual -khud bharo"])
 
     is_verified = False
     tweet_count = 0
