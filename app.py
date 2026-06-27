@@ -404,9 +404,8 @@ with tab1:
 
         ip_country = st.selectbox(
             "Real IP Country (From API)",
-            ALL_COUNTRIES,
-            key="ip_country"
-        )
+          with st.spinner(f"Vasuki Ai Brain Scanning {platform} data... 🧠"):
+                if scan_mode == "Auto - X API/Nitter se data lao" and platform == "Twitter / X":
                     x_data = fetch_x_data(clean_username)
                     if x_data:
                         bio = x_data.get('bio', '')
@@ -415,6 +414,7 @@ with tab1:
                         account_age_days = x_data.get('account_age', 0)
                         st.success("✅ Data fetched from X API/Nitter")
                     else:
+                        st.warning("⚠️ Data not found. Use Manual mode.")
                         st.warning("⚠️ Data not found. Use Manual mode.")
 
                 # Text Similarity Check
