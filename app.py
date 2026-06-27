@@ -355,38 +355,6 @@ with tab1:
     username = st.text_input(f"{platform} Username / Profile Link:", placeholder="@username or paste profile URL")
     scan_mode = st.radio("Scan Mode:", ["Auto - X /", "Manual - Fill it out yourself"])
 
-    st.divider()
-    st.subheader("🧠 Comment Scanner")
-    st.caption("2 comments compare karo - Bot network ya spam pakdo")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        comment1 = st.text_area("Comment 1", "Great alpha ser", height=100, key="vsk_c1")
-    with col2:
-        comment2 = st.text_area("Comment 2", "Thanks for alpha sir", height=100, key="vsk_c2")
-
-    if st.button("🚨 Scan comment", type="primary", use_container_width=True, key="vsk_btn"):
-        if not comment1 or not comment2:
-            st.warning("Dono comments daal bhai")
-        else:
-            with st.spinner('Vasuki Brain analyzing...'):
-                result = vasuki_brain.analyze_text(comment1, comment2)
-            
-            st.divider()
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Semantic Match", f"{result['semantic']}%")
-            c2.metric("Fuzzy Match", f"{result['fuzzy']}%") 
-            c3.metric("Noise Score 1", f"{result['noise_1']}%")
-            c4.metric("Noise Score 2", f"{result['noise_2']}%")
-            
-            if result['is_bot'] == "YES":
-                st.error(f"🚨 BOT/SPAM DETECTED | Threshold: 65%")
-                with st.expander("Full Analysis Data"):
-                    st.json(result)
-            else:
-                st.success("✅ Human Comments Lag Rahe Hain")
-    
-    st.divider()
 
     is_verified = False
     tweet_count = 0
