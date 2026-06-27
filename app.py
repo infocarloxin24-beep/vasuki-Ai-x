@@ -784,4 +784,196 @@ try:
     else:
         st.sidebar.info("No scans")
 except Exception as e:
-    st.sidebar.error(f"History load failed: {str(e)[:50]}")
+    st.sidebar.error(f"History load failed: {str(e)[:50]}") 
+
+# ===== FEEDBACK SECTION - CHHOTA BUTTON + POPOVER =====
+st.markdown("---")
+col1, col2, col3 = st.columns([2, 2, 1])
+
+with col1:
+    # ✅ CHHOTA BUTTON - CLICK PE FORM KHULEGA
+    with st.popover("💬 Feedback", use_container_width=False):
+        user_name = st.text_input("Name:", placeholder="Nishad Singh", key="fb_name")
+        rating = st.slider("Rating:", 1, 5, 5, key="fb_rating")
+
+        emoji_map = {1: "😭", 2: "😟", 3: "😐", 4: "😊", 5: "😍"}
+        color_map = {1: "#FF4B4B", 2: "#FFA500", 3: "#FFD700", 4: "#90EE90", 5: "#00C851"}
+
+        st.markdown(
+            f"<div style='text-align:center;padding:6px;border-radius:6px;margin-bottom:8px;background:{color_map[rating]};color:white;font-weight:bold;font-size:12px'>{emoji_map[rating]} {rating}/5</div>",
+            unsafe_allow_html=True
+        )
+
+        with st.form(key="feedback_form", clear_on_submit=True):
+            user_suggestion = st.text_area("Suggestion:", placeholder="What should we improve?", key="fb_sugg", height=80)
+            if st.form_submit_button("📢 Submit", use_container_width=True):
+                if user_suggestion:
+                    try:
+                        supabase.table("feedback").insert({
+                            "name": user_name if user_name else "Anonymous",
+                            "rating": rating,
+                            "suggestion": user_suggestion
+                        }).execute()
+                        st.success(f"🎉 Thank you! {emoji_map[rating]} Feedback saved.")
+                        st.balloons()
+                    except Exception as e:
+                        st.error(f"Error saving feedback: {e}")
+                else:
+                    st.warning("Please write a suggestion first")
+
+with col2:
+    with st.expander("🔐 User Login / Sign Up"):
+        try:
+            session = supabase.auth.get_session()
+            current_user = session.user if session else None
+        except:
+            current_user = None
+
+        if current_user:
+            st.success(f"✅ Logged in as: {current_user.email}")
+            user_meta = current_user.user_metadata if hasattr(current_user, 'user_metadata') else {}
+            display_name = user_meta.get('full_name', current_user.email.split('@')[0])
+            st.write(f"Name: {display_name}")
+
+            col_out1, col_out2 = st.columns(2)
+            with col_out1:
+                if st.button("🚪 Logout", use_container_width=True, type="primary"):
+                    try:
+                        supabase.auth.sign_out()
+                        st.success("Logged out successfully!")
+                        time.sleep(1)
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Logout failed: {e}")
+
+            with col_out2:
+                if st.button("🔄 Refresh", use_container_width=True):
+                    st.rerun()
+        else:
+            auth_mode = st.radio("Mode:", ["Login", "Sign Up"], horizontal=True, key="auth_mode")
+
+            if auth_mode == "Login":
+                st.markdown("##### 📧 Login with Email")
+                email = st.text_input("Email:", key="auth_email_login")
+                password = st.text_input("Password:", type="password", key="auth_pass_login")
+
+                if st.button("Login", key="login_submit", use_container_width=True):
+                    try:
+                        res = supabase.auth.sign_in_with_password({
+                            "email": email,
+                            "password": password
+                        })
+                        st.success("Login Successful! 🎉")
+                        time.sleep(1)
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Login failed: {str(e)}")
+
+            else:
+                st.markdown("##### 📝 Create New Account")
+                full_name = st.text_input("Full Name:", placeholder="Nishad Singh", key="auth_name_signup")
+                email = st.text_input("Email:", key="auth_email_signup")
+                password = st.text_input("Password:", type="password", key="auth_pass_signup")
+
+                if st.button("Sign Up", key="signup_submit", use_container_width=True):
+                    try:
+                        res = supabase.auth.sign_up({
+                            "email": email,
+                            "password": password,
+                            "options": {"data": {"full_name": full_name}}
+                        })
+                        st.success("Sign Up Successful! Verify your email 📧")
+                        st.info("Verification link sent to your email")
+                    except Exception as e:
+                        st.error(f"Sign Up failed: {str(e)}")
+
+            st.markdown("---")
+            st.markdown("##### 🚀 Social Login")
+
+            st.markdown("""
+            <style>
+       .social-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                width: 100%;
+                padding: 10px;
+                margin: 5px 0;
+                border: 1px solid #dadce0;
+                border-radius: 8px;
+                background: white;
+                color: #3c4043;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+                text-decoration: none;
+            }
+       .social-btn:hover {
+                background: #f8f9fa;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+       .social-btn img {
+                width: 20px;
+                height: 20px;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
+            SUPABASE_URL = st.secrets["SUPABASE_URL"]
+            google_oauth_url = f"{SUPABASE_URL}/auth/v1/authorize?provider=google"
+            github_oauth_url = f"{SUPABASE_URL}/auth/v1/authorize?provider=github"
+
+            col_g, col_gh = st.columns(2)
+
+            with col_g:
+                st.markdown(f"""
+                <a href="{google_oauth_url}" class="social-btn" target="_self">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                    Google
+                </a>
+                """, unsafe_allow_html=True)
+
+            with col_gh:
+                st.markdown(f"""
+                <a href="{github_oauth_url}" class="social-btn" target="_self">
+                    <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub">
+                    GitHub
+                </a>
+                """, unsafe_allow_html=True)
+
+# ===== FOOTER + INSTRUCTIONS - ALWAYS SHOW =====
+st.markdown("---")
+col_left, col_right = st.columns([2, 1])
+with col_left:
+    st.markdown("### 📋 Instructions")
+    st.info("""
+    How to use:
+    1. Bot Check: Enter username and select platform to detect bots
+    2. Country Check: Verify if user's claimed country matches IP location
+    3. Manual Check: Paste text to check for spam patterns + Capital/Small + Alignment
+    4. History: View last 10 scans in the sidebar
+    5. Forensic Report: Click expander after scan for full detail analysis
+    """)
+with col_right:
+    st.markdown("### ⚙️ System Status")
+    try:
+        test_query = supabase.table("scans").select("id").limit(1).execute()
+        st.success("✅ Database Connected")
+    except:
+        st.error("❌ Database Error")
+    st.markdown("### 📊 Quick Stats")
+    try:
+        total_scans = supabase.table("scans").select("id", count="exact").execute()
+        st.metric("Total Scans", total_scans.count if total_scans.count else 0)
+        bot_scans = supabase.table("scans").select("id", count="exact").gte("score", 50).execute()
+        st.metric("Bots Detected", bot_scans.count if bot_scans.count else 0)
+    except:
+        st.metric("Total Scans", "N/A")
+        st.metric("Bots Detected", "N/A")
+
+st.markdown("---")
+st.markdown(
+    "<div style='text-align: center; color: #666; padding: 20px 0; font-size: 14px;'>🐍 Version Vasuki Ai 4.0 - Bot Detector | Built by Nishad Singh 🇮🇳 | Made in Bharat | © 2026 All Rights Reserved</div>",
+    unsafe_allow_html=True
+)
