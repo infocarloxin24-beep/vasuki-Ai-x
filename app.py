@@ -770,4 +770,19 @@ try:
                 <div style="font-weight: bold; margin-bottom: 4px; color: white;">
                     {username_display} {score}% {verdict_icon}
                 </div>
-                <div>📊 Tweets
+
+                    <div>📊 Tweets/Day: {tpd}</div>
+                <div>📅 Account Age: {account_age} days</div>
+                <div>⏰ Last Tweet: {tweet_time}</div>
+                <div>📝 Total Posts: {total_posts}</div>
+                <div>Verified: {verified_text}</div>
+                <div style="margin-top: 4px;">⚠️ Flags:</div>
+                <div style="font-size: 10px; color: #94a3b8;">• {str(flags).replace(', ', '<br>• ')}</div>
+                <div style="color: #64748b; font-size: 9px; margin-top: 4px;">
+                    {time_display}
+                </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.sidebar.info("No scans")
+except Exception as e:
+    st.sidebar.error(f"History load failed: {str(e)[:50]}")
