@@ -11,7 +11,7 @@ import pycountry
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
 # VASUKI AI 4.0 BRAIN IMPORT
-from vasuki_brain import vasuki_brain
+
 # SECRETS SE TOKEN LO
 ADMIN_PASS = st.secrets.get("ADMIN_PASS", "admin123")
 X_BEARER_TOKEN = st.secrets.get("X_BEARER_TOKEN")
