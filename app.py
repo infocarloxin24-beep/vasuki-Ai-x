@@ -356,16 +356,27 @@ with tab1:
 
     is_verified = False
     tweet_count = 0
+    account_age_days = 0
+    claimed_country = ""
+    user_view_country = ""
+    ip_country = ""
+    tweet_time = ""
+    tweet_text = ""
+    bio = ""
+    comment1 = ""
+    comment2 = ""
+
     if scan_mode == "Manual - Khud bharo" or st.session_state.admin:
         st.info("Manual Mode: Fill all fields yourself")
-        
+
+        # ===== 2 COMMENT BOX - OPTIONAL - BRAIN =====
         st.markdown("**Paste suspicious comments to compare: (Optional)**")
         col_c1, col_c2 = st.columns(2)
         with col_c1:
             comment1 = st.text_area("Comment 1", placeholder="Optional: Pehla comment...", height=120, key="c1")
         with col_c2:
             comment2 = st.text_area("Comment 2", placeholder="Optional: Doosra comment...", height=120, key="c2")
-        
+
         tweet_text = st.text_area(f"Paste {platform} post/comment for pattern analysis: (Optional)",
                                   placeholder="Optional: Single post ka analysis...",
                                   height=100, key="ttext")
@@ -404,7 +415,17 @@ with tab1:
 
         ip_country = st.selectbox(
             "Real IP Country (From API)",
-          with st.spinner(f"Vasuki Ai Brain Scanning {platform} data... 🧠"):
+            ALL_COUNTRIES,
+            key="ip_country"
+        )
+
+    if st.button("🚀 Scan Karo"):
+        if username or (scan_mode == "Manual - Khud bharo" and (tweet_text or comment1 or comment2)):
+            clean_username = username if username.startswith("@") or "http" in username else f"@{username}"
+            if not username and (tweet_text or comment1 or comment2):
+                clean_username = "Anonymous Text"
+
+            with st.spinner(f"Vasuki Ai Brain Scanning {platform} data... 🧠"):
                 if scan_mode == "Auto - X API/Nitter se data lao" and platform == "Twitter / X":
                     x_data = fetch_x_data(clean_username)
                     if x_data:
@@ -415,7 +436,23 @@ with tab1:
                         st.success("✅ Data fetched from X API/Nitter")
                     else:
                         st.warning("⚠️ Data not found. Use Manual mode.")
-                        st.warning("⚠️ Data not found. Use Manual mode.")
+
+                # ===== VASUKI BRAIN - 2 COMMENT COMPARISON =====
+                if comment1 and comment2:
+                    fuzzy = round(SequenceMatcher(None, comment1, comment2).ratio() * 100, 2)
+                    st.markdown("### 🧠 Vasuki Brain: Comment Comparison")
+                    c1, c2, c3 = st.columns(3)
+                    c1.metric("Fuzzy Match", f"{fuzzy}%")
+                    if fuzzy > 65:
+                        c2.metric("Risk", "HIGH 🚨")
+                        st.error("**BOT DETECTED:** Comments 65%+ match. Spam activity.")
+                    else:
+                        c2.metric("Risk", "LOW ✅")
+                        st.success("**SAFE:** Comments alag hain.")
+                    st.divider()
+                elif comment1 or comment2:
+                    st.info("🧠 Basic check: Sirf 1 comment mila")
+                    st.divider()
 
                 # Text Similarity Check
                 max_similarity = 0
@@ -432,8 +469,9 @@ with tab1:
                     return username
 
                 current_user_clean = clean_username_for_compare(clean_username)
+                compare_text = comment1 if comment1 else tweet_text
 
-                if tweet_text and len(tweet_text.strip()) > 20:
+                if compare_text and len(compare_text.strip()) > 20:
                     try:
                         past_scans = supabase.table("scans").select("tweet_text, username").limit(100).execute()
                         if past_scans.data:
@@ -442,11 +480,11 @@ with tab1:
                                 old_user_raw = s.get('username', '')
                                 old_user_clean = clean_username_for_compare(old_user_raw)
 
-                                if old_text and old_text.strip() == tweet_text.strip() and old_user_clean == current_user_clean:
+                                if old_text and old_text.strip() == compare_text.strip() and old_user_clean == current_user_clean:
                                     st.warning("⚠️ Duplicate Scan Detected: This exact account + content was scanned before.")
                                     st.stop()
                                 elif old_text and old_user_clean!= current_user_clean:
-                                    sim = SequenceMatcher(None, tweet_text.lower(), old_text.lower()).ratio() * 100
+                                    sim = SequenceMatcher(None, compare_text.lower(), old_text.lower()).ratio() * 100
                                     if sim > max_similarity:
                                         max_similarity = sim
                                         matched_tweet = old_text[:50] + "..."
@@ -459,6 +497,13 @@ with tab1:
                     account_age=account_age_days, tweet_time=tweet_time, user_view_country=user_view_country,
                     claimed_country=claimed_country, ip_country=ip_country, tweet_text=tweet_text
                 )
+
+                # Add comment comparison to score
+                if comment1 and comment2:
+                    fuzzy = round(SequenceMatcher(None, comment1, comment2).ratio() * 100, 2)
+                    if fuzzy > 65:
+                        score += 30
+                        reasons.append(f"Comment Match: {fuzzy}% - Coordinated spam")
 
                 # ✅ FIX 1: COORDINATED BOT = FORCE 100% BOT - NO CONTRADICTION
                 if max_similarity > 85 and matched_username:
