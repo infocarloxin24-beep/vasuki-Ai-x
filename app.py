@@ -6,11 +6,12 @@ st.set_page_config(
 )
 
 # Google ke liye Description daal de
-st.markdown("""
-    <meta name="google-site-verification" content="j5YO8nvU3ViYKwqaBq_ 
-     <meta name="description" content="ScanX is a free AI bot detector. Check if Twitter, Instagram, or Reddit accounts are bots. Scan any text for AI content. 100% Free Tool.">
+# Google Verification + SEO Tags
+components.html("""
+    <meta name="google-site-verification" content="j5YO8nvU3ViYKwqaBq_..." />
+    <meta name="description" content="ScanX is a free AI bot detector. Check if Twitter, Instagram, or Reddit accounts are bots.">
     <meta name="keywords" content="bot detector, ai detector, free bot checker, scanx, twitter bot check, fake account detector">
-""", unsafe_allow_html=True)
+""", height=0)
 import requests
 from supabase import create_client, Client
 from datetime import datetime
