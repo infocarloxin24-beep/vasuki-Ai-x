@@ -321,7 +321,7 @@ key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
 st.set_page_config(page_title="Vasuki Ai 4.0 - Bot Detector", page_icon="🐍", layout="wide")
-st.title("🐍 Vasuki Ai 4.0 - Universal Bot Detector")
+st.title("ScanX.Ai - Universal Bot Detector")
 st.caption("Multi-Platform Account & Text Scanner | Powered by AI")
 
 st.info("⚠️ Disclaimer: This tool provides an AI-assisted probability estimate and should not be treated as definitive proof.")
@@ -974,6 +974,6 @@ with col_right:
 
 st.markdown("---")
 st.markdown(
-    "<div style='text-align: center; color: #666; padding: 20px 0; font-size: 14px;'> Version 2 ScanX.Ai - Bot Detector | Made in India | © 2026 All Rights Reserved</div>",
+    "<div style='text-align: center; color: #666; padding: 20px 0; font-size: 14px;'> Version: 2 ScanX.Ai - Bot Detector | Made in India | © 2026 All Rights Reserved</div>",
     unsafe_allow_html=True
 )
