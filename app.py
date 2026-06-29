@@ -333,7 +333,7 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-st.set_page_config(page_title="ScanX.Ai - Bot Detector", page_icon="ScanX", layout="wide")
+st.set_page_config(page_title="ScanX.Ai - Bot Detector", page_icon="🐍", layout="wide")
 st.title("ScanX.Ai - Universal Bot Detector")
 st.caption("Multi-Platform Account & Text Scanner | Powered by AI")
 
