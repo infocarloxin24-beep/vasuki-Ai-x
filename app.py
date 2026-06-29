@@ -1,17 +1,17 @@
-import streamlit as st 
-st.set_page_config(
-    page_title="ScanX - Free Bot Detector",
-    page_icon="assets/logo.png",
-    layout="wide"
-)
-
-# Google ke liye Description daal de
-# Google Verification + SEO Tags
-components.html("""
-    <meta name="google-site-verification" content="j5YO8nvU3ViYKwqaBq_..." />
-    <meta name="description" content="ScanX is a free AI bot detector. Check if Twitter, Instagram, or Reddit accounts are bots.">
-    <meta name="keywords" content="bot detector, ai detector, free bot checker, scanx, twitter bot check, fake account detector">
-""", height=0)
+ import streamlit as st
+  import streamlit.components.v1 as components
+ st.set_page_config(
+      page_title="ScanX - Free Bot Detector",
+     page_icon="assets/logo.png",
+     layout="wide"
+  )
+  
+  # Google Verification + SEO Tags
+ components.html("""
+     <meta name="google-site-verification" content="j5YO8nvU3ViYKwqaBq_..." />
+     <meta name="description" content="ScanX is a free AI bot detector. Check if Twitter, Instagram, or Reddit accounts are bots.">
+     <meta name="keywords" content="bot detector, ai detector, free bot checker, scanx">
+ """, height=0)
 import requests
 from supabase import create_client, Client
 from datetime import datetime
