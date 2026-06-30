@@ -1,4 +1,5 @@
- import streamlit as st
+ import streamlit as st 
+
 st.set_page_config(
     page_title="BotRadar - Free Bot Detector",
     page_icon="assets/logo.png",
