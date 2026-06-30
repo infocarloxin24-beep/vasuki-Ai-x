@@ -27,7 +27,68 @@ from difflib import SequenceMatcher
 # SECRETS SE TOKEN LO
 ADMIN_PASS = st.secrets.get("ADMIN_PASS", "admin123")
 X_BEARER_TOKEN = st.secrets.get("X_BEARER_TOKEN")
+# ================== LINE 430 SE REPLACE KAR ==================
+from Heartbeat import ScanXAdvancedEngine
+engine = ScanXAdvancedEngine()
 
+st.subheader("📝 Manual Data Input")
+
+username = st.text_input("Twitter Username daalo", "@example")
+
+st.caption("🦅 Bot Radar: Optional - Tweets daalo to extra report milegi")
+tweets_input = st.text_area("Tweets - Har tweet nayi line me", height=150)
+timestamps_input = st.text_area("Timestamps - YYYY-MM-DD HH:MM:SS", height=150)
+
+if st.button("Scan Karo"):
+    # ===== VASU KA PURANA CODE YAHAN HOGA =====
+    # Tu jo pehle se kar raha tha wo yahan chalega
+    st.write("Vasu ka result yahan aayega...")  # Isko apne Vasu wale code se replace kar dena
+    
+    # ===== BOT RADAR KA CODE - ISI BUTTON KE ANDAR =====
+    tweets_text_list = [line.strip() for line in tweets_input.split("\n") if line.strip()]
+    tweets_timestamps = [line.strip() for line in timestamps_input.split("\n") if line.strip()]
+    
+    if len(tweets_text_list) >= 3 and len(tweets_text_list) == len(tweets_timestamps):
+        try:
+            with st.spinner("Bot Radar running deep forensic analysis..."):
+                combined_tweets_text = " ".join(tweets_text_list)
+                ai_results = engine.analyze_stylometry(tweets_text_list)
+                heartbeat_results = engine.analyze_server_heartbeat(tweets_timestamps)
+                persona_results = engine.cross_platform_persona_tracker(username, combined_tweets_text)
+
+            st.markdown("---")
+            st.subheader("🦅 Bot Radar - Advanced Forensic Report")
+
+            ai_prob = ai_results["ai_probability"]
+            if ai_prob >= 70:
+                st.error(f"🚨 *{ai_results['verdict']}* ({ai_prob}% Probability)")
+            elif ai_prob >= 40:
+                st.warning(f"⚠️ *Suspicious Writing Pattern* ({ai_prob}% AI Probability)")
+            else:
+                st.success(f"✅ *{ai_results['verdict']}* ({ai_prob}% AI Probability)")
+
+            bot_prob = heartbeat_results["bot_probability"]
+            if bot_prob >= 80:
+                st.error(f"🚨 *{heartbeat_results['verdict']}* ({bot_prob}% Match)\n\n*MAD Score:* {heartbeat_results['median_absolute_deviation_mad']}")
+                for flag in heartbeat_results["flags_triggered"]:
+                    st.caption(f"📌 Flagged: {flag}")
+            elif bot_prob >= 50:
+                st.warning(f"⚠️ *{heartbeat_results['verdict']}* ({bot_prob}% Match)")
+                for flag in heartbeat_results["flags_triggered"]:
+                    st.caption(f"📌 Flagged: {flag}")
+            else:
+                st.success(f"✅ *{heartbeat_results['verdict']}* ({bot_prob}% Match)")
+
+            if persona_results["cross_platform_spam"]:
+                st.error(f"🚨 *{persona_results['verdict']}* (Risk Score: {persona_results['coordinated_risk_score']}/100)")
+                for network in persona_results["detected_networks"]:
+                    st.write(f"• {network}")
+            else:
+                st.success("✅ *Safe Web Footprint*")
+
+        except Exception as e:
+            st.error(f"🚨 Bot Radar failed: {str(e)}")
+# ================== BLOCK KHATAM ==================
 if 'admin' not in st.session_state:
     st.session_state.admin = False
 
