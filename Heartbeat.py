@@ -47,13 +47,13 @@ class ScanXAdvancedEngine:
         length_variance = np.var(sentence_lengths) if sentence_lengths else 100
 
         ai_score = 0
-        if 12 <= avg_sentence_length <= 25: # AI's sweet spot
+        if 12 <= avg_sentence_length <= 25:
             ai_score += 35
-        if length_variance < 15: # Bot uniformity
+        if length_variance < 15:
             ai_score += 45
         if (
             special_char_count / (total_words if total_words > 0 else 1) > 0.15
-        ): # High spam symbol density
+        ):
             ai_score += 20
 
         return {
@@ -100,12 +100,10 @@ class ScanXAdvancedEngine:
                 "flags_triggered": []
             }
 
-        # Convert to numpy array for enterprise performance speed
         np_deltas = np.array(time_deltas)
         delta_variance = np.var(np_deltas)
         avg_delta = np.mean(np_deltas)
 
-        # High-performance MAD calculation using numpy directly
         median_delta = np.median(np_deltas)
         mad = np.median(np.abs(np_deltas - median_delta))
 
@@ -142,7 +140,7 @@ class ScanXAdvancedEngine:
             "median_absolute_deviation_mad": round(mad, 4),
             "avg_gap_seconds": round(avg_delta, 2),
             "bot_probability": bot_probability,
-            "flags_triggered": reasons, # Returns clean empty list if no flags
+            "flags_triggered": reasons,
             "verdict": verdict,
         }
 
@@ -173,9 +171,10 @@ class ScanXAdvancedEngine:
             "verdict": "Coordinated Inauthentic Behavior (CIB) Flagged" if suspicious_score >= 50 else "Safe",
         }
 
+if _name_ == "_main_":
     engine = ScanXAdvancedEngine()
- if _name_ == "_main_":  
-print("\n--- 1. Testing AI Stylometry Engine ---")
+
+    print("\n--- 1. Testing AI Stylometry Engine ---")
     ai_tweets = [
         "Cryptocurrency markets exhibit significant volatility today. Ensure proper risk mitigation strategies.",
         "To optimize your portfolio, click the link to join our exclusive network. Financial growth awaits.",
