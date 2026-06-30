@@ -127,7 +127,7 @@ class ScanXAdvancedEngine:
             "verdict": "Coordinated Inauthentic Behavior (CIB) Flagged" if suspicious_score >= 50 else "Safe",
         }
 
-if _name_ == "_main_":
+if __name__ == "__main__":  ← Sahi - Double underscore
     engine = ScanXAdvancedEngine()
     print("\n--- 1. Testing AI Stylometry Engine ---")
     ai_tweets = [
