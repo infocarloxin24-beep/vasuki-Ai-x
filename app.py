@@ -394,8 +394,8 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-st.set_page_config(page_title="BotRadar - Bot Detector", page_icon="🐍", layout="wide")
-st.title("BotRadar Ai - Universal Bot Detector")
+st.set_page_config(page_title="HumbotiX - Bot Detector", page_icon="🐍", layout="wide")
+st.title("HumbotiX  - Universal Bot Detector")
 st.caption("Multi-Platform Account & Text Scanner | Powered by AI")
 
 st.info("⚠️ Disclaimer: This tool provides an AI-assisted probability estimate and should not be treated as definitive proof.")
