@@ -10,8 +10,7 @@ except LookupError:
     nltk.download("punkt", quiet=True)
 
 class ScanXAdvancedEngine:
-
-    def _init_(self):
+    def __init__(self):
         print("🚀 Scan X Advanced Forensic Engine Activated...")
 
     def analyze_stylometry(self, text_list):
@@ -127,7 +126,7 @@ class ScanXAdvancedEngine:
             "verdict": "Coordinated Inauthentic Behavior (CIB) Flagged" if suspicious_score >= 50 else "Safe",
         }
 
-if __name__ == "__main__":  ← Sahi - Double underscore
+if __name__ == "__main__":
     engine = ScanXAdvancedEngine()
     print("\n--- 1. Testing AI Stylometry Engine ---")
     ai_tweets = [
