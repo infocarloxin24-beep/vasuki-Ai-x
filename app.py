@@ -1,15 +1,15 @@
-import streamlit as st
+1 import streamlit as st
 
 st.set_page_config(
-    page_title="Humbotix - Free Bot Detector",
+    page_title="BotRadar - Free Bot Detector",
     page_icon="assets/logo.png",
     layout="wide"
 )
 
 # Google ke liye Description daal de
 st.markdown("""
-    <meta name="description" content="Humbotix is a free AI bot detector. Check if Twitter, Instagram, or Reddit accounts are bots. Scan any text for AI content. 100% Free Tool.">
-    <meta name="keywords" content="bot detector, ai detector, free bot checker, Humbotix BotRadar, twitter bot check, fake account detector">
+    <meta name="description" content="BotRadar is a free AI bot detector. Check if Twitter, Instagram, or Reddit accounts are bots. Scan any text for AI content. 100% Free Tool.">
+    <meta name="keywords" content="bot detector, ai detector, free bot checker, BotRadar, twitter bot check, fake account detector">
 """, unsafe_allow_html=True)
 
 import requests
@@ -23,74 +23,149 @@ import pytz
 import pycountry
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
+import numpy as np
+import nltk
+from nltk.tokenize import sent_tokenize, word_tokenize
+
+# NLTK requirements check quietly
+try:
+    nltk.data.find("tokenizers/punkt")
+except LookupError:
+    nltk.download("punkt", quiet=True)
 
 # SECRETS SE TOKEN LO
 ADMIN_PASS = st.secrets.get("ADMIN_PASS", "admin123")
 X_BEARER_TOKEN = st.secrets.get("X_BEARER_TOKEN")
-# ================== LINE 430 SE REPLACE KAR ==================
-from Heartbeat import ScanXAdvancedEngine
-engine = ScanXAdvancedEngine()
 
-st.subheader("📝 Manual Data Input")
-
-username = st.text_input("Twitter Username daalo", "@example")
-
-st.caption("🦅 Bot Radar: Optional - Tweets daalo to extra report milegi")
-tweets_input = st.text_area("Tweets - Har tweet nayi line me", height=150)
-timestamps_input = st.text_area("Timestamps - YYYY-MM-DD HH:MM:SS", height=150)
-
-if st.button("Scan Karo"):
-    # ===== VASU KA PURANA CODE YAHAN HOGA =====
-    # Tu jo pehle se kar raha tha wo yahan chalega
-    st.write("Vasu ka result yahan aayega...")  # Isko apne Vasu wale code se replace kar dena
-    
-    # ===== BOT RADAR KA CODE - ISI BUTTON KE ANDAR =====
-    tweets_text_list = [line.strip() for line in tweets_input.split("\n") if line.strip()]
-    tweets_timestamps = [line.strip() for line in timestamps_input.split("\n") if line.strip()]
-    
-    if len(tweets_text_list) >= 3 and len(tweets_text_list) == len(tweets_timestamps):
-        try:
-            with st.spinner("Bot Radar running deep forensic analysis..."):
-                combined_tweets_text = " ".join(tweets_text_list)
-                ai_results = engine.analyze_stylometry(tweets_text_list)
-                heartbeat_results = engine.analyze_server_heartbeat(tweets_timestamps)
-                persona_results = engine.cross_platform_persona_tracker(username, combined_tweets_text)
-
-            st.markdown("---")
-            st.subheader("🦅 Bot Radar - Advanced Forensic Report")
-
-            ai_prob = ai_results["ai_probability"]
-            if ai_prob >= 70:
-                st.error(f"🚨 *{ai_results['verdict']}* ({ai_prob}% Probability)")
-            elif ai_prob >= 40:
-                st.warning(f"⚠️ *Suspicious Writing Pattern* ({ai_prob}% AI Probability)")
-            else:
-                st.success(f"✅ *{ai_results['verdict']}* ({ai_prob}% AI Probability)")
-
-            bot_prob = heartbeat_results["bot_probability"]
-            if bot_prob >= 80:
-                st.error(f"🚨 *{heartbeat_results['verdict']}* ({bot_prob}% Match)\n\n*MAD Score:* {heartbeat_results['median_absolute_deviation_mad']}")
-                for flag in heartbeat_results["flags_triggered"]:
-                    st.caption(f"📌 Flagged: {flag}")
-            elif bot_prob >= 50:
-                st.warning(f"⚠️ *{heartbeat_results['verdict']}* ({bot_prob}% Match)")
-                for flag in heartbeat_results["flags_triggered"]:
-                    st.caption(f"📌 Flagged: {flag}")
-            else:
-                st.success(f"✅ *{heartbeat_results['verdict']}* ({bot_prob}% Match)")
-
-            if persona_results["cross_platform_spam"]:
-                st.error(f"🚨 *{persona_results['verdict']}* (Risk Score: {persona_results['coordinated_risk_score']}/100)")
-                for network in persona_results["detected_networks"]:
-                    st.write(f"• {network}")
-            else:
-                st.success("✅ *Safe Web Footprint*")
-
-        except Exception as e:
-            st.error(f"🚨 Bot Radar failed: {str(e)}")
-# ================== BLOCK KHATAM ==================
 if 'admin' not in st.session_state:
     st.session_state.admin = False
+
+# --- FRESH 3 FEATURES ENGINE CLASS ---
+class ScanXAdvancedEngine:
+    def __init__(self):
+        pass
+
+    def analyze_stylometry(self, text_list):
+        if not text_list or len(text_list) == 0:
+            return {"ai_probability": 0, "status": "No Data", "verdict": "No Data"}
+        total_words = 0
+        total_sentences = 0
+        sentence_lengths = []
+        special_char_count = 0
+        for text in text_list:
+            if not text: continue
+            sentences = sent_tokenize(text)
+            words = word_tokenize(text)
+            total_sentences += len(sentences)
+            total_words += len(words)
+            if len(sentences) > 0:
+                sentence_lengths.append(len(words) / len(sentences))
+            special_char_count += len(re.findall(r"[!@#$%^&*()_+={}\[\]|\\:]", text))
+        avg_sentence_length = (np.mean(sentence_lengths) if sentence_lengths else 0)
+        length_variance = np.var(sentence_lengths) if sentence_lengths else 100
+        ai_score = 0
+        if 12 <= avg_sentence_length <= 25:
+            ai_score += 35
+        if length_variance < 15:
+            ai_score += 45
+        if (special_char_count / (total_words if total_words > 0 else 1) > 0.15):
+            ai_score += 20
+        return {
+            "ai_probability": min(ai_score, 100),
+            "avg_sentence_length": round(avg_sentence_length, 2),
+            "text_uniformity_variance": round(length_variance, 2),
+            "verdict": "AI Generated" if ai_score >= 70 else "Human Written",
+        }
+
+    def analyze_server_heartbeat(self, timestamp_strings):
+        if len(timestamp_strings) < 2:  # Adjusted safely for manual inputs
+            return {
+                "heartbeat_detected": False,
+                "bot_probability": 0,
+                "reason": "Insufficient timestamp data",
+                "verdict": "Organic or Manual Entry",
+                "flags_triggered": []
+            }
+        timestamps = []
+        for ts in timestamp_strings:
+            try:
+                # Fallback handler for dynamic formats
+                if ":" in ts and "-" in ts:
+                    timestamps.append(datetime.strptime(ts, "%Y-%m-%d %H:%M:%S"))
+                elif ":" in ts:
+                    today_str = datetime.now().strftime("%Y-%m-%d")
+                    timestamps.append(datetime.strptime(f"{today_str} {ts}:00", "%Y-%m-%d %H:%M:%S"))
+            except ValueError:
+                continue
+        timestamps.sort()
+        time_deltas = []
+        for i in range(len(timestamps) - 1):
+            delta = (timestamps[i + 1] - timestamps[i]).total_seconds()
+            time_deltas.append(delta)
+        if not time_deltas:
+            return {
+                "heartbeat_detected": False,
+                "bot_probability": 0,
+                "reason": "No valid intervals",
+                "verdict": "No valid intervals",
+                "flags_triggered": []
+            }
+        np_deltas = np.array(time_deltas)
+        delta_variance = np.var(np_deltas)
+        avg_delta = np.mean(np_deltas)
+        median_delta = np.median(np_deltas)
+        mad = np.median(np.abs(np_deltas - median_delta))
+        bot_probability = 0
+        reasons = []
+        if delta_variance < 2.0 and avg_delta > 0:
+            bot_probability += 60
+            reasons.append("Ultra-low time variance detected (Static Interval)")
+        elif delta_variance < 15.0:
+            bot_probability += 40
+            reasons.append("Low time variance detected (Scheduled Script)")
+        if mad < 5.0 and avg_delta > 0:
+            bot_probability += 40
+            reasons.append("High pattern consistency caught by MAD (Smart/Jitter Bot)")
+        elif mad < 12.0:
+            bot_probability += 20
+            reasons.append("Moderate pattern consistency caught by MAD")
+        bot_probability = min(bot_probability, 100)
+        if bot_probability >= 80:
+            verdict = "🚨 100% Automated Script/Server Detected"
+        elif bot_probability >= 50:
+            verdict = "⚠️ High Probability of Scheduled/Smart Bot"
+        else:
+            verdict = "Normal Human Timing (Organic)"
+        return {
+            "heartbeat_detected": True if bot_probability >= 50 else False,
+            "time_delta_variance_seconds": round(delta_variance, 4),
+            "median_gap_seconds": round(median_delta, 2),
+            "median_absolute_deviation_mad": round(mad, 4),
+            "avg_gap_seconds": round(avg_delta, 2),
+            "bot_probability": bot_probability,
+            "flags_triggered": reasons,
+            "verdict": verdict,
+        }
+
+    def cross_platform_persona_tracker(self, username, post_text):
+        crypto_links = re.findall(r"(t\.me|telegram|discord|crypto|whatsapp)", post_text.lower())
+        platforms_found = []
+        suspicious_score = 0
+        if len(crypto_links) > 0:
+            platforms_found.append("Telegram / Discord Channels")
+            suspicious_score += 50
+        if re.search(r"\d{5,}", username):
+            platforms_found.append("Coordinated Multi-Platform Name Grid")
+            suspicious_score += 40
+        return {
+            "cross_platform_spam": True if suspicious_score >= 50 else False,
+            "detected_networks": platforms_found if platforms_found else ["None Isolated"],
+            "coordinated_risk_score": suspicious_score,
+            "verdict": "Coordinated Inauthentic Behavior (CIB) Flagged" if suspicious_score >= 50 else "Safe",
+        }
+
+# Initialize Advanced Engine
+advanced_engine = ScanXAdvancedEngine()
 
 # 195 COUNTRIES LIST
 def get_all_countries():
@@ -394,9 +469,8 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-st.set_page_config(page_title="HumbotiX - Bot Detector", page_icon="🐍", layout="wide")
-st.title("HumbotiX  - Universal Bot Detector")
-st.caption("Global Multi-  Social Platform Account & Text Scanner | Powered by AI")
+st.title("BotRadar Ai - Universal Bot Detector")
+st.caption("Multi-Platform Account & Text Scanner | Powered by AI")
 
 st.info("⚠️ Disclaimer: This tool provides an AI-assisted probability estimate and should not be treated as definitive proof.")
 
@@ -586,11 +660,32 @@ with tab1:
                     except Exception as e:
                         if st.session_state.admin: st.write(f"Similarity check error: {e}")
 
+                # Execute fresh naye features background mein logically
+                text_corpus = [t for t in [tweet_text, comment1, comment2] if t]
+                stylo_report = advanced_engine.analyze_stylometry(text_corpus)
+                
+                timestamps_corpus = [t for t in [tweet_time] if t]
+                heartbeat_report = advanced_engine.analyze_server_heartbeat(timestamps_corpus)
+                
+                tracker_report = advanced_engine.cross_platform_persona_tracker(clean_username, tweet_text if tweet_text else "")
+
                 score, reasons, tpd, forensics = check_bot_score_gupt(
                     username=clean_username, bio=bio, is_verified=is_verified, tweet_count=tweet_count,
                     account_age=account_age_days, tweet_time=tweet_time, user_view_country=user_view_country,
                     claimed_country=claimed_country, ip_country=ip_country, tweet_text=tweet_text
                 )
+
+                # Add advanced metrics insights inside original scoring engine logs safely
+                if stylo_report["ai_probability"] >= 70:
+                    score += 15
+                    reasons.append(f"Advanced Stylometry Check: {stylo_report['verdict']} ({stylo_report['ai_probability']}% Match)")
+                if heartbeat_report["bot_probability"] >= 50:
+                    score += 20
+                    for flag in heartbeat_report["flags_triggered"]:
+                        reasons.append(f"Timing Engine: {flag}")
+                if tracker_report["coordinated_risk_score"] >= 50:
+                    score += 15
+                    reasons.append(f"Persona Tracker: {tracker_report['verdict']}")
 
                 # Add comment comparison to score
                 if comment1 and comment2 and fuzzy >= 65:
@@ -645,8 +740,32 @@ with tab1:
                     st.metric("Bot Score", f"{score}%", delta=f"{'Danger' if score>=70 else 'Suspicious' if score>=50 else 'Safe'}", delta_color="inverse")
                     st.write(f"Verified Status: {verified_text}")
 
-                    # ✅ FORENSIC REPORT - FULL DETAIL
+                    # ✅ FORENSIC REPORT - FULL DETAIL WITH FRESH FEATURES DISPLAY
                     with st.expander("🔬 Forensic Report - Full Detail", expanded=True):
+                        
+                        # --- Displaying Fresh 3 Features Under Proper Titles ---
+                        st.markdown("### 🚀 Scan X Advanced Insights (New Features)")
+                        col_adv1, col_adv2, col_adv3 = st.columns(3)
+                        with col_adv1:
+                            st.markdown("**✍️ AI Stylometry Analysis**")
+                            st.write(f"Verdict: `{stylo_report['verdict']}`")
+                            st.write(f"AI Probability: `{stylo_report['ai_probability']}%`")
+                            st.write(f"Avg Sentence Length: `{stylo_report['avg_sentence_length']}`")
+                            st.write(f"Text Uniformity Variance: `{stylo_report['text_uniformity_variance']}`")
+                        with col_adv2:
+                            st.markdown("**💓 MAD Timing Engine**")
+                            st.write(f"Verdict: `{heartbeat_report['verdict']}`")
+                            st.write(f"Bot Probability: `{heartbeat_report['bot_probability']}%`")
+                            st.write(f"Median Absolute Deviation (MAD): `{heartbeat_report['median_absolute_deviation_mad']}`")
+                            st.write(f"Gap Variance: `{heartbeat_report['time_delta_variance_seconds']}s`")
+                        with col_adv3:
+                            st.markdown("**🌐 Cross-Platform Tracker**")
+                            st.write(f"Verdict: `{tracker_report['verdict']}`")
+                            st.write(f"Coordinated Risk Score: `{tracker_report['coordinated_risk_score']}`")
+                            st.write(f"Detected Networks: `{', '.join(tracker_report['detected_networks'])}`")
+                        
+                        st.divider()
+
                         st.markdown("**📈 Statistical Analysis:**")
                         col_f1, col_f2, col_f3 = st.columns(3)
                         with col_f1:
@@ -865,7 +984,6 @@ st.markdown("---")
 col1, col2, col3 = st.columns([2, 2, 1])
 
 with col1:
-    # ✅ CHHOTA BUTTON - CLICK PE FORM KHULEGA
     with st.popover("💬 Feedback", use_container_width=False):
         user_name = st.text_input("Name:", placeholder="Nishad Singh", key="fb_name")
         rating = st.slider("Rating:", 1, 5, 5, key="fb_rating")
@@ -1048,6 +1166,6 @@ with col_right:
 
 st.markdown("---")
 st.markdown(
-    "<div style='text-align: center; color: #666; padding: 20px 0; font-size: 14px;'> Version: 2 Humbotix Ai - Bot Detector | Made in India | © 2026 All Rights Reserved</div>",
+    "<div style='text-align: center; color: #666; padding: 20px 0; font-size: 14px;'> Version: 2 BotRadar Ai - Bot Detector | Made in India | © 2026 All Rights Reserved</div>",
     unsafe_allow_html=True
 )
