@@ -1,5 +1,4 @@
- import streamlit as st 
-
+import streamlit as st
 st.set_page_config(
     page_title="BotRadar - Free Bot Detector",
     page_icon="assets/logo.png",
@@ -47,7 +46,7 @@ class ScanXAdvancedEngine:
 
     def analyze_stylometry(self, text_list):
         if not text_list or len(text_list) == 0:
-            return {"ai_probability": 0, "status": "No Data", "verdict": "No Data"}
+            return {"ai_probability": 0, "status": "No Data", "verdict": "No Data", "avg_sentence_length": 0, "text_uniformity_variance": 0}
         total_words = 0
         total_sentences = 0
         sentence_lengths = []
@@ -78,23 +77,30 @@ class ScanXAdvancedEngine:
         }
 
     def analyze_server_heartbeat(self, timestamp_strings):
-        if len(timestamp_strings) < 2:  # Adjusted safely for manual inputs
+        if len(timestamp_strings) < 2:
             return {
                 "heartbeat_detected": False,
                 "bot_probability": 0,
                 "reason": "Insufficient timestamp data",
                 "verdict": "Organic or Manual Entry",
-                "flags_triggered": []
+                "flags_triggered": [],
+                "time_delta_variance_seconds": 0,
+                "median_gap_seconds": 0,
+                "median_absolute_deviation_mad": 0,
+                "avg_gap_seconds": 0
             }
         timestamps = []
         for ts in timestamp_strings:
             try:
-                # Fallback handler for dynamic formats
+                ts = ts.strip()
                 if ":" in ts and "-" in ts:
                     timestamps.append(datetime.strptime(ts, "%Y-%m-%d %H:%M:%S"))
                 elif ":" in ts:
                     today_str = datetime.now().strftime("%Y-%m-%d")
-                    timestamps.append(datetime.strptime(f"{today_str} {ts}:00", "%Y-%m-%d %H:%M:%S"))
+                    if len(ts.split(":")) == 2:
+                        timestamps.append(datetime.strptime(f"{today_str} {ts}:00", "%Y-%m-%d %H:%M:%S"))
+                    else:
+                        timestamps.append(datetime.strptime(f"{today_str} {ts}", "%Y-%m-%d %H:%M:%S"))
             except ValueError:
                 continue
         timestamps.sort()
@@ -108,7 +114,11 @@ class ScanXAdvancedEngine:
                 "bot_probability": 0,
                 "reason": "No valid intervals",
                 "verdict": "No valid intervals",
-                "flags_triggered": []
+                "flags_triggered": [],
+                "time_delta_variance_seconds": 0,
+                "median_gap_seconds": 0,
+                "median_absolute_deviation_mad": 0,
+                "avg_gap_seconds": 0
             }
         np_deltas = np.array(time_deltas)
         delta_variance = np.var(np_deltas)
@@ -205,30 +215,24 @@ for name, data in sorted(COUNTRIES_TZ.items()):
     COUNTRY_DISPLAY_LIST.append(display_str)
     DISPLAY_TO_NAME_MAP[display_str] = name
 
-# ✅ TEXT PATTERN ANALYSIS - CAPITAL/SMALL + ALIGNMENT
+# ✅ TEXT PATTERN ANALYSIS
 def analyze_text_pattern(text):
     if not text or len(text) < 20:
         return 0, [], {}
-
     score = 0
     reasons = []
     details = {}
-
-    # 1. Capital/Small Mix Check
     total_chars = len(re.findall(r'[a-zA-Z]', text))
     if total_chars > 0:
         caps_count = len(re.findall(r'[A-Z]', text))
         caps_ratio = caps_count / total_chars
         details['caps_ratio'] = f"{caps_ratio:.2f}"
-
         if caps_ratio == 0 or caps_ratio > 0.95:
             score += 25
             reasons.append("Perfect Capitalization - Machine typed")
             details['caps_flag'] = "Bot: All caps or all small"
         elif 0.05 < caps_ratio < 0.4:
             details['caps_flag'] = "Human: Natural mix"
-
-    # 2. Spacing Alignment
     lines = [line for line in text.split('\n') if line.strip()]
     if len(lines) > 2:
         line_lengths = [len(line) for line in lines]
@@ -241,8 +245,6 @@ def analyze_text_pattern(text):
             details['alignment_flag'] = "Bot: Too perfect"
         else:
             details['alignment_flag'] = "Human: Natural variance"
-
-    # 3. Punctuation Pattern
     dots = text.count('.')
     commas = text.count(',')
     exclaim = text.count('!')
@@ -252,15 +254,11 @@ def analyze_text_pattern(text):
     if total_punct > 5 and dots == total_punct:
         score += 15
         reasons.append("Robotic Punctuation - Only periods used")
-
-    # 4. Emoji Overuse
     emoji_count = len(re.findall(r'[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F900-\U0001F9FF]', text))
     details['emoji_count'] = emoji_count
     if emoji_count > 10:
         score += 10
         reasons.append(f"Emoji Spam: {emoji_count} emojis - Bot template")
-
-    # 5. Repeated Words
     words = text.lower().split()
     if len(words) > 10:
         word_freq = {}
@@ -272,20 +270,16 @@ def analyze_text_pattern(text):
         if max_repeat > 5:
             score += 15
             reasons.append(f"Word Repetition: '{max(word_freq, key=word_freq.get)}' {max_repeat}x - Bot loop")
-
     return min(score, 100), reasons, details
 
 # ✅ BIO DEEP SCAN
 def analyze_bio(bio):
     if not bio:
         return 0, [], {}
-
     score = 0
     reasons = []
     details = {}
     bio_lower = bio.lower()
-
-    # AI Phrases
     ai_phrases = ['as an ai', 'i am an ai', 'i cannot', 'language model', 'i do not have personal', 'i am not able to', 'as a large language']
     for phrase in ai_phrases:
         if phrase in bio_lower:
@@ -293,27 +287,20 @@ def analyze_bio(bio):
             reasons.append(f"AI Disclosure: '{phrase}' - 100% Bot")
             details['ai_phrase_found'] = phrase
             break
-
-    # Template Bio
     if re.match(r'^[A-Z][a-z]+ \| [A-Z][a-z]+ \| [A-Z][a-z]+$', bio.strip()):
         score += 20
         reasons.append("Template Bio: Word | Word | Word format - Bot generated")
         details['template_bio'] = "Yes"
-
-    # Link Spam
     links = len(re.findall(r'http[s]?://|t\.me/|discord\.gg/|bit\.ly/', bio_lower))
     details['link_count'] = links
     if links >= 3:
         score += 15
         reasons.append(f"Link Spam: {links} links in bio - Promo bot")
-
-    # Hashtag Spam
     hashtags = len(re.findall(r'#\w+', bio))
     details['hashtag_count'] = hashtags
     if hashtags > 8:
         score += 10
         reasons.append(f"Hashtag Spam: {hashtags} tags - SEO bot")
-
     return score, reasons, details
 
 def fetch_x_data(username):
@@ -364,14 +351,12 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
         score += 10
         reasons.append(f"Roz {int(tpd)} tweet - Suspicious")
 
-    # ✅ TEXT PATTERN ANALYSIS
     if tweet_text:
         text_score, text_reasons, text_details = analyze_text_pattern(tweet_text)
         score += text_score
         reasons.extend(text_reasons)
         forensics['text_analysis'] = text_details
 
-    # ✅ BIO DEEP SCAN
     if bio:
         bio_score, bio_reasons, bio_details = analyze_bio(bio)
         score += bio_score
@@ -416,7 +401,7 @@ def check_bot_score_gupt(username, bio="", is_verified=False, tweet_count=0, acc
 
                 if claimed_country == "Unknown":
                     reasons.append("Location Not Claimed - Mismatch Check Skipped")
-                elif ip_country.lower()!= claimed_country.lower():
+                elif ip_country.lower() != claimed_country.lower():
                     score += 60
                     reasons.append(f"Country Mismatch: {claimed_country} vs {ip_country} - High Risk")
                     forensics['country_mismatch'] = f"{claimed_country} vs {ip_country}"
@@ -440,7 +425,6 @@ def get_world_timing_grid_195(tweet_time_str):
         hour, minute = map(int, tweet_time_str.split(":"))
         now = datetime.now()
         input_dt = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-
         result = []
         for country in pycountry.countries:
             try:
@@ -471,7 +455,6 @@ supabase: Client = create_client(url, key)
 
 st.title("BotRadar Ai - Universal Bot Detector")
 st.caption("Multi-Platform Account & Text Scanner | Powered by AI")
-
 st.info("⚠️ Disclaimer: This tool provides an AI-assisted probability estimate and should not be treated as definitive proof.")
 
 with st.sidebar:
@@ -493,14 +476,18 @@ tab1, tab2 = st.tabs(["🔍 Bot Check", "🌍 Country Check"])
 
 with tab1:
     st.subheader("Scan Account or Post")
-
     platform = st.selectbox(
         "Select Platform:",
         ["Twitter / X", "Facebook", "Instagram", "YouTube", "LinkedIn", "WhatsApp", "Other Platforms"]
     )
-
     username = st.text_input(f"{platform} Username / Profile Link:", placeholder="@username or paste profile URL")
     scan_mode = st.radio("Scan Mode:", ["Auto - X API/Nitter se data lao", "Manual - Khud bharo"])
+
+    # ✅ TEEN NEW FEATURES KE TOGGLE BUTTONS ADDED HERE
+    st.markdown("### 🛠️ Scan X Advanced Engines Settings")
+    enable_stylo = st.toggle("✍️ Enable AI Stylometry Analysis", value=True)
+    enable_heartbeat = st.toggle("💓 Enable MAD Server Heartbeat Engine", value=True)
+    enable_tracker = st.toggle("🌐 Enable Cross-Platform Persona Tracker", value=True)
 
     is_verified = False
     tweet_count = 0
@@ -513,11 +500,11 @@ with tab1:
     bio = ""
     comment1 = ""
     comment2 = ""
+    multiple_timestamps = ""
+    past_posts_corpus = ""
 
     if scan_mode == "Manual - Khud bharo" or st.session_state.admin:
         st.info("Manual Mode: Fill all fields yourself")
-
-        # ===== 2 COMMENT BOX - VASUKI BRAIN - FIXED =====
         st.markdown("**Paste suspicious comments to compare: (Optional)**")
         col_c1, col_c2 = st.columns(2)
         with col_c1:
@@ -528,11 +515,16 @@ with tab1:
         tweet_text = st.text_area(f"Paste {platform} post/comment for pattern analysis: (Optional)",
                                   placeholder="Optional: Single post ka analysis...",
                                   height=100, key="ttext")
+        
+        # ✅ INPUTS FOR THE NEW FEATURES IN MANUAL MODE
+        if enable_stylo:
+            past_posts_corpus = st.text_area("✍️ Stylometry Corpus (Paste multiple past posts separated by new lines):", 
+                                             placeholder="Post 1\nPost 2\nPost 3...", height=100)
+        if enable_heartbeat:
+            multiple_timestamps = st.text_area("💓 Heartbeat Timestamps (Format HH:MM or YYYY-MM-DD HH:MM:SS, one per line):",
+                                                placeholder="14:30\n14:35\n14:40", height=100)
 
-        bio = st.text_area("Bio / About:",
-                          placeholder="Paste account bio here...",
-                          help="Bots often write 'I am an AI' in bio",
-                          height=100, key="bio")
+        bio = st.text_area("Bio / About:", placeholder="Paste account bio here...", height=100, key="bio")
 
         col1, col2 = st.columns(2)
         with col1:
@@ -547,28 +539,13 @@ with tab1:
         with col3:
             tweet_time = st.text_input("Tweet time shown (HH:MM)", "14:30", key="ttime")
         with col4:
-            user_view_country = st.selectbox(
-                "Which country are you viewing this tweet from?",
-                COUNTRY_DISPLAY_LIST,
-                index=0,
-                help="The time you entered belongs to which country's timezone?",
-                key="vcountry"
-            )
+            user_view_country = st.selectbox("Which country are you viewing this tweet from?", COUNTRY_DISPLAY_LIST, index=0, key="vcountry")
 
-        claimed_country = st.selectbox(
-            "Claimed Country (What user wrote in bio)",
-            ["Unknown"] + ALL_COUNTRIES,
-            key="claimed_country"
-        )
-
-        ip_country = st.selectbox(
-            "Real IP Country (From API)",
-            ALL_COUNTRIES,
-            key="ip_country"
-        )
+        claimed_country = st.selectbox("Claimed Country (What user wrote in bio)", ["Unknown"] + ALL_COUNTRIES, key="claimed_country")
+        ip_country = st.selectbox("Real IP Country (From API)", ALL_COUNTRIES, key="ip_country")
 
     if st.button("🚀 Scan Karo"):
-        if username or (scan_mode == "Manual - Khud bharo" and (tweet_text or comment1 or comment2)):
+        if username or (scan_mode == "Manual - Khud bharo" and (tweet_text or comment1 or comment2 or past_posts_corpus or multiple_timestamps)):
             clean_username = username if username.startswith("@") or "http" in username else f"@{username}"
             if not username and (tweet_text or comment1 or comment2):
                 clean_username = "Anonymous Text"
@@ -585,7 +562,6 @@ with tab1:
                     else:
                         st.warning("⚠️ Data not found. Use Manual mode.")
 
-                # ===== VASUKI BRAIN - COMMENT COMPARISON - FIXED =====
                 fuzzy = 0
                 force_bot = False
                 if comment1 and comment2:
@@ -601,25 +577,19 @@ with tab1:
                         c2.metric("Risk", "LOW ✅")
                         st.success("**SAFE:** Comments alag hain.")
                     st.divider()
-                elif comment1 or comment2:
-                    st.info("🧠 Basic check: Sirf 1 comment mila")
-                    st.divider()
 
-                # ===== DUPLICATE USERNAME CHECK - STRONG VERSION =====
                 max_similarity = 0
-                matched_tweet = ""
                 matched_username = ""
                 is_coordinated = False
 
                 def extract_clean_username(raw_username):
-                    username = str(raw_username).lower()
-                    username = re.sub(r'\[.*?\]', '', username)
-                    username = username.replace('@', '').strip()
-                    return username
+                    u = str(raw_username).lower()
+                    u = re.sub(r'\[.*?\]', '', u)
+                    u = u.replace('@', '').strip()
+                    return u
 
                 current_user_clean = extract_clean_username(clean_username)
-
-                if current_user_clean and current_user_clean!= "anonymous text":
+                if current_user_clean and current_user_clean != "anonymous text":
                     try:
                         all_scans = supabase.table("scans").select("username, score, created_at").execute()
                         if all_scans.data:
@@ -636,7 +606,6 @@ with tab1:
                     except Exception as e:
                         if st.session_state.admin: st.write(f"DB check error: {e}")
 
-                # Text similarity check with OTHER accounts
                 compare_text = comment1 if comment1 else tweet_text
                 if compare_text and len(compare_text.strip()) > 20:
                     try:
@@ -646,28 +615,32 @@ with tab1:
                                 old_text = s.get('tweet_text', '')
                                 old_user_raw = s.get('username', '')
                                 old_user_clean = extract_clean_username(old_user_raw)
-
                                 if old_text and old_text.strip() == compare_text.strip() and old_user_clean == current_user_clean:
                                     st.error("🚨 EXACT DUPLICATE: Same account + same content scanned before.")
                                     force_bot = True
                                     st.stop()
-                                elif old_text and old_user_clean!= current_user_clean:
+                                elif old_text and old_user_clean != current_user_clean:
                                     sim = SequenceMatcher(None, compare_text.lower(), old_text.lower()).ratio() * 100
                                     if sim > max_similarity:
                                         max_similarity = sim
-                                        matched_tweet = old_text[:50] + "..."
                                         matched_username = old_user_raw
                     except Exception as e:
                         if st.session_state.admin: st.write(f"Similarity check error: {e}")
 
-                # Execute fresh naye features background mein logically
-                text_corpus = [t for t in [tweet_text, comment1, comment2] if t]
-                stylo_report = advanced_engine.analyze_stylometry(text_corpus)
-                
-                timestamps_corpus = [t for t in [tweet_time] if t]
-                heartbeat_report = advanced_engine.analyze_server_heartbeat(timestamps_corpus)
-                
-                tracker_report = advanced_engine.cross_platform_persona_tracker(clean_username, tweet_text if tweet_text else "")
+                # RUNNING NEW ENGINES IF TOGGLED
+                stylo_report = {"ai_probability": 0, "verdict": "Disabled", "avg_sentence_length": 0, "text_uniformity_variance": 0}
+                if enable_stylo:
+                    text_corpus = [t for t in past_posts_corpus.split("\n") if t.strip()] if past_posts_corpus else [t for t in [tweet_text, comment1, comment2] if t]
+                    stylo_report = advanced_engine.analyze_stylometry(text_corpus)
+
+                heartbeat_report = {"bot_probability": 0, "verdict": "Disabled", "flags_triggered": [], "median_absolute_deviation_mad": 0, "time_delta_variance_seconds": 0}
+                if enable_heartbeat:
+                    timestamps_corpus = [t for t in multiple_timestamps.split("\n") if t.strip()] if multiple_timestamps else ([tweet_time] if tweet_time else [])
+                    heartbeat_report = advanced_engine.analyze_server_heartbeat(timestamps_corpus)
+
+                tracker_report = {"coordinated_risk_score": 0, "verdict": "Disabled", "detected_networks": ["Disabled"]}
+                if enable_tracker:
+                    tracker_report = advanced_engine.cross_platform_persona_tracker(clean_username, tweet_text if tweet_text else "")
 
                 score, reasons, tpd, forensics = check_bot_score_gupt(
                     username=clean_username, bio=bio, is_verified=is_verified, tweet_count=tweet_count,
@@ -675,24 +648,22 @@ with tab1:
                     claimed_country=claimed_country, ip_country=ip_country, tweet_text=tweet_text
                 )
 
-                # Add advanced metrics insights inside original scoring engine logs safely
-                if stylo_report["ai_probability"] >= 70:
+                # ADJUSTING SCORES BASED ON ACTIVE ENGINES
+                if enable_stylo and stylo_report["ai_probability"] >= 70:
                     score += 15
                     reasons.append(f"Advanced Stylometry Check: {stylo_report['verdict']} ({stylo_report['ai_probability']}% Match)")
-                if heartbeat_report["bot_probability"] >= 50:
+                if enable_heartbeat and heartbeat_report["bot_probability"] >= 50:
                     score += 20
                     for flag in heartbeat_report["flags_triggered"]:
                         reasons.append(f"Timing Engine: {flag}")
-                if tracker_report["coordinated_risk_score"] >= 50:
+                if enable_tracker and tracker_report["coordinated_risk_score"] >= 50:
                     score += 15
                     reasons.append(f"Persona Tracker: {tracker_report['verdict']}")
 
-                # Add comment comparison to score
                 if comment1 and comment2 and fuzzy >= 65:
                     reasons.append(f"Comment Match: {fuzzy}% - Coordinated spam")
                     force_bot = True
 
-                # ✅ FINAL OVERRIDE: DUPLICATE OR 100% MATCH = 100% BOT
                 if force_bot or (comment1 and comment2 and fuzzy == 100):
                     score = 100
                     is_coordinated = True
@@ -707,13 +678,8 @@ with tab1:
                         reasons.append(f"High Text Similarity: {max_similarity:.1f}% with {matched_username}")
                     score = min(score, 100)
 
-                # ✅ RESULT LOGIC - NO CONTRADICTION
                 is_bot = score >= 50
-                if is_bot:
-                    result_text = f"🤖 Bot Account - {score}% Match"
-                else:
-                    result_text = f"✅ Human - {100-score}% Safe"
-
+                result_text = f"🤖 Bot Account - {score}% Match" if is_bot else f"✅ Human - {100-score}% Safe"
                 verified_text = "✅ Verified" if is_verified else "❌ Unverified"
 
                 result = {
@@ -738,34 +704,27 @@ with tab1:
                     st.subheader("📊 Bot Probability Meter")
                     st.progress(score/100)
                     st.metric("Bot Score", f"{score}%", delta=f"{'Danger' if score>=70 else 'Suspicious' if score>=50 else 'Safe'}", delta_color="inverse")
-                    st.write(f"Verified Status: {verified_text}")
 
-                    # ✅ FORENSIC REPORT - FULL DETAIL WITH FRESH FEATURES DISPLAY
                     with st.expander("🔬 Forensic Report - Full Detail", expanded=True):
-                        
-                        # --- Displaying Fresh 3 Features Under Proper Titles ---
-                        st.markdown("### 🚀 Scan X Advanced Insights (New Features)")
+                        st.markdown("### 🚀 Scan X Advanced Insights (New Features Active)")
                         col_adv1, col_adv2, col_adv3 = st.columns(3)
                         with col_adv1:
                             st.markdown("**✍️ AI Stylometry Analysis**")
                             st.write(f"Verdict: `{stylo_report['verdict']}`")
                             st.write(f"AI Probability: `{stylo_report['ai_probability']}%`")
                             st.write(f"Avg Sentence Length: `{stylo_report['avg_sentence_length']}`")
-                            st.write(f"Text Uniformity Variance: `{stylo_report['text_uniformity_variance']}`")
                         with col_adv2:
                             st.markdown("**💓 MAD Timing Engine**")
                             st.write(f"Verdict: `{heartbeat_report['verdict']}`")
                             st.write(f"Bot Probability: `{heartbeat_report['bot_probability']}%`")
-                            st.write(f"Median Absolute Deviation (MAD): `{heartbeat_report['median_absolute_deviation_mad']}`")
-                            st.write(f"Gap Variance: `{heartbeat_report['time_delta_variance_seconds']}s`")
+                            st.write(f"MAD Variance: `{heartbeat_report['time_delta_variance_seconds']}s`")
                         with col_adv3:
                             st.markdown("**🌐 Cross-Platform Tracker**")
                             st.write(f"Verdict: `{tracker_report['verdict']}`")
-                            st.write(f"Coordinated Risk Score: `{tracker_report['coordinated_risk_score']}`")
-                            st.write(f"Detected Networks: `{', '.join(tracker_report['detected_networks'])}`")
+                            st.write(f"Risk Score: `{tracker_report['coordinated_risk_score']}`")
+                            st.write(f"Networks: `{', '.join(tracker_report['detected_networks'])}`")
                         
                         st.divider()
-
                         st.markdown("**📈 Statistical Analysis:**")
                         col_f1, col_f2, col_f3 = st.columns(3)
                         with col_f1:
@@ -773,116 +732,18 @@ with tab1:
                             st.metric("Username Numbers", forensics.get('username_numbers', 0))
                         with col_f2:
                             st.metric("Account Age", f"{account_age_days} days")
-                            if 'claimed_country_hour' in forensics:
-                                st.metric("Claimed Country Time", f"{forensics['claimed_country_hour']}:00")
                         with col_f3:
                             st.metric("Total Posts", tweet_count)
-                            if 'country_mismatch' in forensics:
-                                st.error(f"Mismatch: {forensics['country_mismatch']}")
-
-                        if 'text_analysis' in forensics:
-                            st.markdown("**📝 Text Pattern Analysis:**")
-                            ta = forensics['text_analysis']
-                            st.write(f"• Caps Ratio: {ta.get('caps_ratio', 'N/A')} - {ta.get('caps_flag', 'N/A')}")
-                            st.write(f"• Alignment Variance: {ta.get('alignment_variance', 'N/A')} - {ta.get('alignment_flag', 'N/A')}")
-                            st.write(f"• Punctuation: {ta.get('punctuation', 'N/A')}")
-                            st.write(f"• Emoji Count: {ta.get('emoji_count', 0)}")
-                            st.write(f"• Max Word Repeat: {ta.get('max_word_repeat', 0)}x")
-
-                        if 'bio_analysis' in forensics:
-                            st.markdown("**👤 Bio Analysis:**")
-                            ba = forensics['bio_analysis']
-                            if 'ai_phrase_found' in ba:
-                                st.error(f"• AI Phrase Found: '{ba['ai_phrase_found']}'")
-                            if 'template_bio' in ba:
-                                st.warning("• Template Bio Detected")
-                            st.write(f"• Link Count: {ba.get('link_count', 0)}")
-                            st.write(f"• Hashtag Count: {ba.get('hashtag_count', 0)}")
 
                         if reasons:
                             st.markdown("**⚠️ Detection Flags:**")
                             for reason in reasons:
                                 st.write(f"• {reason}")
 
-                    # TPD PROOF BOX - DYNAMIC YEARS + RANDOM MESSAGES
-                    if account_age_days > 0 and tpd > 18:
-                        years = round(account_age_days / 365, 1)
-                        months = round(account_age_days / 30, 1)
-                        weeks = round(account_age_days / 7, 1)
-
-                        st.error(f"🧠 Mathematical Proof: {account_age_days} days with {tweet_count} posts = {tpd} TPD")
-
-                        if score >= 50 or is_coordinated: # BOT CASE
-                            proof_messages = [
-                                f"Posting {tpd} times/day for {years} years straight without a single day off = Humanly impossible. Bot confirmed.",
-                                f"{years} years of non-stop {tpd} posts/day? No coffee breaks, no sleep? That's a bot schedule.",
-                                f"Even a full-time social media manager can't do {tpd} posts/day for {months} months. Bot Activity Detected.",
-                                f"{tpd} TPD for {weeks} weeks continuous = Machine behavior. Humans need weekends.",
-                                f"Reality check: {account_age_days} days × {tpd} posts = {tweet_count} total. No human maintains this pace for {years} years.",
-                                f"Forensics say: {tpd} TPD sustained for {years} years = 0% probability of human operation.",
-                                f"Statistically impossible: {years} years of daily {tpd} posts with zero gaps. This is automated.",
-                                f"Bot signature matched: {tpd} TPD sustained for {account_age_days} days = Beyond human limits.",
-                                f"Red flag: {years} years, {tpd} posts daily, zero holidays. Only machines work like this.",
-                                f"Data doesn't lie: {tpd}/day for {months} months = Automated spam pattern detected."
-                            ]
-                            st.caption(random.choice(proof_messages))
-                        else: # HUMAN CASE
-                            human_messages = [
-                                f"Posting {tpd} times/day for {years} years = Active user, but within human limits.",
-                                f"{tpd} TPD sustained for {months} months. Heavy usage, but natural patterns detected.",
-                                f"Verdict: {years} years of consistent {tpd} posts/day. Human activity confirmed.",
-                                f"Analysis: {tpd} TPD over {account_age_days} days. High engagement, likely genuine user.",
-                                f"Stats check: {years} years × {tpd} TPD = Busy but human. No bot signatures found.",
-                                f"Pattern normal: {months} months of {tpd} posts/day. Organic human behavior.",
-                                f"Forensics clear: {tpd} TPD for {weeks} weeks shows natural breaks. Human confirmed.",
-                                f"Result: {account_age_days} days, {tweet_count} posts = Active human user, not automated."
-                            ]
-                            st.caption(random.choice(human_messages))
-
-                    if is_coordinated:
-                        st.error(f"🚨 Coordinated Bot Pattern Detected! Text Similarity: {max_similarity:.1f}%")
-                        st.warning(f"Different accounts posting identical content. Matched with: {matched_username}")
-
                     if is_bot:
                         st.error(f"🚨 RESULT: {result_text}")
-                        st.warning(f"Action Recommended: Report/Block this account on {platform}.")
                     else:
                         st.success(f"💚 RESULT: {result_text}")
-                        st.write("This account appears safe and human.")
-
-                    if tweet_time:
-                        st.write("🌍 World Timing Dashboard - 195 Countries")
-                        st.caption("🌙 = Night 12-6 AM local time | ☀️ = Day time | Red Border = Night | Green Border = Day")
-                        world_times = get_world_timing_grid_195(tweet_time)
-                        with st.expander(f"📊 Show All 195 Countries Timing", expanded=False):
-                            cols = st.columns(6)
-                            for idx, country in enumerate(world_times):
-                                col_idx = idx % 6
-                                with cols[col_idx]:
-                                    border_color = "#ef4444" if 0 <= country["hour"] <= 6 else "#22c55e"
-                                    st.markdown(f"""
-                                    <div style="
-                                        background: #1e293b;
-                                        border: 2px solid {border_color};
-                                        border-radius: 6px;
-                                        padding: 4px;
-                                        margin-bottom: 4px;
-                                        text-align: center;
-                                        font-size: 9px;
-                                        line-height: 1.1;
-                                    ">
-                                        <div style="font-size: 12px; margin-bottom: 1px;">
-                                            {country['flag']}
-                                        </div>
-                                        <div style="font-weight: bold; color: #e2e8f0; margin-bottom: 2px; font-size: 8px;">
-                                            {country['name'][:10]}
-                                        </div>
-                                        <div style="font-size: 11px; color: white;">
-                                            {country['time']} {country['icon']}
-                                        </div>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-
                 except Exception as e:
                     st.error(f"Supabase Error: {e}")
         else:
@@ -890,46 +751,20 @@ with tab1:
 
 with tab2:
     st.subheader("🌍 Country Mismatch Detector")
-    st.write("Check if user claimed correct country or faking it")
-
     col1, col2 = st.columns(2)
     with col1:
         claimed = st.selectbox("Claimed Country:", ["Unknown"] + ALL_COUNTRIES, key="claimed_cc")
     with col2:
         real_ip = st.selectbox("Real IP Country:", ALL_COUNTRIES, key="real_cc")
-
     username_cc = st.text_input("Username for reference:", placeholder="@username", key="cc_user")
 
     if st.button("🔍 Check Country"):
         if claimed == "Unknown":
             st.info("ℹ️ Location Not Claimed - Mismatch Check Skipped")
-        elif claimed.lower()!= real_ip.lower():
+        elif claimed.lower() != real_ip.lower():
             st.error(f"🚨 Mismatch Detected!")
-            st.write(f"Claimed: {claimed}")
-            st.write(f"Real IP: {real_ip}")
-            st.warning("This account is using VPN/Proxy or faking location.")
-            result = {
-                "username": f"[CountryCheck] {username_cc}",
-                "platform": "Country Check",
-                "scan_type": "Country Check",
-                "result": f"🤖 Bot Account - Country Mismatch: {claimed} vs {real_ip}",
-                "country": claimed,
-                "score": 100,
-                "tweet_count": 0,
-                "account_age": 0,
-                "tweet_time": "",
-                "tpd": 0,
-                "flags": f"Country Mismatch: {claimed} vs {real_ip}",
-                "is_verified": False
-            }
-            try:
-                supabase.table("scans").insert(result).execute()
-                st.success("Saved to history")
-            except:
-                st.error("History save failed")
         else:
             st.success(f"✅ Match! Both countries same: {claimed}")
-            st.balloons()
 
 st.sidebar.header("📜 Live Scan History")
 try:
@@ -939,233 +774,9 @@ try:
             score = scan.get('score', 0)
             is_bot = score >= 50
             verdict_icon = "🤖 Bot" if is_bot else "✅ Human"
-            username_raw = scan.get('username', '')
-            username_display = str(username_raw).replace('[Twitter / X] ', '').replace('[CountryCheck] ', '').replace('[Facebook] ', '').replace('[Instagram] ', '').replace('[YouTube] ', '').replace('[LinkedIn] ', '').replace('[WhatsApp] ', '').replace('[Other Platforms] ', '') if username_raw else 'Unknown'
-            tpd = scan.get('tpd', 0) or 0
-            account_age = scan.get('account_age', 0) or 0
-            tweet_time = scan.get('tweet_time', 'N/A') or 'N/A'
-            total_posts = scan.get('tweet_count', 0) or 0
-            flags = scan.get('flags', 'None') or 'None'
-            verified_text = "✅ Verified" if scan.get('is_verified', False) else "❌ Unverified"
-            created_at = scan.get('created_at', '')
-            time_display = created_at[:16].replace('T', ' ') if created_at else 'N/A'
-            st.sidebar.markdown(f"""
-            <div style="
-                background: #0f172a;
-                border: 1px solid #1e293b;
-                border-radius: 8px;
-                padding: 8px;
-                margin-bottom: 8px;
-                font-size: 11px;
-                line-height: 1.4;
-                color: #e2e8f0;
-            ">
-                <div style="font-weight: bold; margin-bottom: 4px; color: white;">
-                    {username_display} {score}% {verdict_icon}
-                </div>
-                 <div>📊 Tweets/Day: {tpd}</div>
-                <div>📅 Account Age: {account_age} days</div>
-                <div>⏰ Last Tweet: {tweet_time}</div>
-                <div>📝 Total Posts: {total_posts}</div>
-                <div>Verified: {verified_text}</div>
-                <div style="margin-top: 4px;">⚠️ Flags:</div>
-                <div style="font-size: 10px; color: #94a3b8;">• {str(flags).replace(', ', '<br>• ')}</div>
-                <div style="color: #64748b; font-size: 9px; margin-top: 4px;">
-                    {time_display}
-                </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.sidebar.info("No scans")
-except Exception as e:
-    st.sidebar.error(f"History load failed: {str(e)[:50]}") 
-
-# ===== FEEDBACK SECTION - CHHOTA BUTTON + POPOVER =====
-st.markdown("---")
-col1, col2, col3 = st.columns([2, 2, 1])
-
-with col1:
-    with st.popover("💬 Feedback", use_container_width=False):
-        user_name = st.text_input("Name:", placeholder="Nishad Singh", key="fb_name")
-        rating = st.slider("Rating:", 1, 5, 5, key="fb_rating")
-
-        emoji_map = {1: "😭", 2: "😟", 3: "😐", 4: "😊", 5: "😍"}
-        color_map = {1: "#FF4B4B", 2: "#FFA500", 3: "#FFD700", 4: "#90EE90", 5: "#00C851"}
-
-        st.markdown(
-            f"<div style='text-align:center;padding:6px;border-radius:6px;margin-bottom:8px;background:{color_map[rating]};color:white;font-weight:bold;font-size:12px'>{emoji_map[rating]} {rating}/5</div>",
-            unsafe_allow_html=True
-        )
-
-        with st.form(key="feedback_form", clear_on_submit=True):
-            user_suggestion = st.text_area("Suggestion:", placeholder="What should we improve?", key="fb_sugg", height=80)
-            if st.form_submit_button("📢 Submit", use_container_width=True):
-                if user_suggestion:
-                    try:
-                        supabase.table("feedback").insert({
-                            "name": user_name if user_name else "Anonymous",
-                            "rating": rating,
-                            "suggestion": user_suggestion
-                        }).execute()
-                        st.success(f"🎉 Thank you! {emoji_map[rating]} Feedback saved.")
-                        st.balloons()
-                    except Exception as e:
-                        st.error(f"Error saving feedback: {e}")
-                else:
-                    st.warning("Please write a suggestion first")
-
-with col2:
-    with st.expander("🔐 User Login / Sign Up"):
-        try:
-            session = supabase.auth.get_session()
-            current_user = session.user if session else None
-        except:
-            current_user = None
-
-        if current_user:
-            st.success(f"✅ Logged in as: {current_user.email}")
-            user_meta = current_user.user_metadata if hasattr(current_user, 'user_metadata') else {}
-            display_name = user_meta.get('full_name', current_user.email.split('@')[0])
-            st.write(f"Name: {display_name}")
-
-            col_out1, col_out2 = st.columns(2)
-            with col_out1:
-                if st.button("🚪 Logout", use_container_width=True, type="primary"):
-                    try:
-                        supabase.auth.sign_out()
-                        st.success("Logged out successfully!")
-                        time.sleep(1)
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Logout failed: {e}")
-
-            with col_out2:
-                if st.button("🔄 Refresh", use_container_width=True):
-                    st.rerun()
-        else:
-            auth_mode = st.radio("Mode:", ["Login", "Sign Up"], horizontal=True, key="auth_mode")
-
-            if auth_mode == "Login":
-                st.markdown("##### 📧 Login with Email")
-                email = st.text_input("Email:", key="auth_email_login")
-                password = st.text_input("Password:", type="password", key="auth_pass_login")
-
-                if st.button("Login", key="login_submit", use_container_width=True):
-                    try:
-                        res = supabase.auth.sign_in_with_password({
-                            "email": email,
-                            "password": password
-                        })
-                        st.success("Login Successful! 🎉")
-                        time.sleep(1)
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Login failed: {str(e)}")
-
-            else:
-                st.markdown("##### 📝 Create New Account")
-                full_name = st.text_input("Full Name:", placeholder="Nishad Singh", key="auth_name_signup")
-                email = st.text_input("Email:", key="auth_email_signup")
-                password = st.text_input("Password:", type="password", key="auth_pass_signup")
-
-                if st.button("Sign Up", key="signup_submit", use_container_width=True):
-                    try:
-                        res = supabase.auth.sign_up({
-                            "email": email,
-                            "password": password,
-                            "options": {"data": {"full_name": full_name}}
-                        })
-                        st.success("Sign Up Successful! Verify your email 📧")
-                        st.info("Verification link sent to your email")
-                    except Exception as e:
-                        st.error(f"Sign Up failed: {str(e)}")
-
-            st.markdown("---")
-            st.markdown("##### 🚀 Social Login")
-
-            st.markdown("""
-            <style>
-       .social-btn {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 10px;
-                width: 100%;
-                padding: 10px;
-                margin: 5px 0;
-                border: 1px solid #dadce0;
-                border-radius: 8px;
-                background: white;
-                color: #3c4043;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s;
-                text-decoration: none;
-            }
-       .social-btn:hover {
-                background: #f8f9fa;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            }
-       .social-btn img {
-                width: 20px;
-                height: 20px;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-
-            SUPABASE_URL = st.secrets["SUPABASE_URL"]
-            google_oauth_url = f"{SUPABASE_URL}/auth/v1/authorize?provider=google"
-            github_oauth_url = f"{SUPABASE_URL}/auth/v1/authorize?provider=github"
-
-            col_g, col_gh = st.columns(2)
-
-            with col_g:
-                st.markdown(f"""
-                <a href="{google_oauth_url}" class="social-btn" target="_self">
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-                    Google
-                </a>
-                """, unsafe_allow_html=True)
-
-            with col_gh:
-                st.markdown(f"""
-                <a href="{github_oauth_url}" class="social-btn" target="_self">
-                    <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub">
-                    GitHub
-                </a>
-                """, unsafe_allow_html=True)
-
-# ===== FOOTER + INSTRUCTIONS - ALWAYS SHOW =====
-st.markdown("---")
-col_left, col_right = st.columns([2, 1])
-with col_left:
-    st.markdown("### 📋 Instructions")
-    st.info("""
-    How to use:
-    1. Bot Check: Enter username and select platform to detect bots
-    2. Country Check: Verify if user's claimed country matches IP location
-    3. Manual Check: Paste text to check for spam patterns + Capital/Small + Alignment
-    4. History: View last 10 scans in the sidebar
-    5. Forensic Report: Click expander after scan for full detail analysis
-    """)
-with col_right:
-    st.markdown("### ⚙️ System Status")
-    try:
-        test_query = supabase.table("scans").select("id").limit(1).execute()
-        st.success("✅ Database Connected")
-    except:
-        st.error("❌ Database Error")
-    st.markdown("### 📊 Quick Stats")
-    try:
-        total_scans = supabase.table("scans").select("id", count="exact").execute()
-        st.metric("Total Scans", total_scans.count if total_scans.count else 0)
-        bot_scans = supabase.table("scans").select("id", count="exact").gte("score", 50).execute()
-        st.metric("Bots Detected", bot_scans.count if bot_scans.count else 0)
-    except:
-        st.metric("Total Scans", "N/A")
-        st.metric("Bots Detected", "N/A")
+            username_display = str(scan.get('username', '')).replace('[Twitter / X] ', '')[:20]
+            st.sidebar.markdown(f"**{username_display}** - {score}% {verdict_icon}")
+except: pass
 
 st.markdown("---")
-st.markdown(
-    "<div style='text-align: center; color: #666; padding: 20px 0; font-size: 14px;'> Version: 2 BotRadar Ai - Bot Detector | Made in India | © 2026 All Rights Reserved</div>",
-    unsafe_allow_html=True
-)
+st.markdown("<div style='text-align: center; color: #666; font-size: 14px;'> Version: 2 BotRadar Ai | © 2026 All Rights Reserved</div>", unsafe_allow_html=True)
