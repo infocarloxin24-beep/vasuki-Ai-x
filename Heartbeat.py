@@ -174,9 +174,7 @@ class ScanXAdvancedEngine:
         }
 
     engine = ScanXAdvancedEngine()
-
- 
-if _name_ == "_main_":  
+ if _name_ == "_main_":  
 print("\n--- 1. Testing AI Stylometry Engine ---")
     ai_tweets = [
         "Cryptocurrency markets exhibit significant volatility today. Ensure proper risk mitigation strategies.",
