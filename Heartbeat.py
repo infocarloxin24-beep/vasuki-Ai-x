@@ -175,7 +175,7 @@ class ScanXAdvancedEngine:
         }
 
 
-if _name_ == "_main_":
+  if _name_ == "_main_"
     engine = ScanXAdvancedEngine()
 
     print("\n--- 1. Testing AI Stylometry Engine ---")
