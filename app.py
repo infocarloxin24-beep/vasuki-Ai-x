@@ -449,57 +449,6 @@ with tab1:
                          st.success("✅ Data fetched from X API/Nitter")
                     else:
                         st.warning("⚠️ Data not found. Use Manual mode.") 
-                # =========================================================================
-        # 🦅 SCAN X ADVANCED LOGIC (लाइन 449 पर st.success के ठीक नीचे पेस्ट करें)
-        # =========================================================================
-        try:
-            # आपके x_data के अंदर से ट्वीट्स का टेक्स्ट और टाइमस्टैम्प्स निकालना
-            # (यदि आपके x_data में ये कीज़ अलग नाम से हैं, तो उन्हें यहाँ बदल सकते हैं)
-            tweets_text_list = x_data.get('tweets', []) 
-            tweets_timestamps = x_data.get('timestamps', [])
-
-            with st.spinner("Scan X Engine बैकएंड में गहरी फॉरेंसिक जांच कर रहा है..."):
-                ai_results = engine.analyze_stylometry(tweets_text_list)
-                heartbeat_results = engine.analyze_server_heartbeat(tweets_timestamps)
-                persona_results = engine.cross_platform_persona_tracker(clean_username, tweets_text_list if tweets_text_list else "")
-
-            st.markdown("---") # साफ विभाजन रेखा
-            st.subheader("🦅 Scan X - एडवांस्ड फॉरेंसिक रिपोर्ट")
-
-            # 🔬 1. AI Language Detection Pattern
-            st.markdown("#### 1. AI Language Detection Pattern")
-            ai_prob = ai_results["ai_probability"]
-            if ai_prob >= 70:
-                st.error(f"🚨 *{ai_results['verdict']}* ({ai_prob}% Probability)\n\nइस खाते के ट्वीट्स की बनावट रोबोटिक है। वाक्य संरचना में इंसानी उतार-चढ़ाव गायब है।")
-            elif ai_prob >= 40:
-                st.warning(f"⚠️ *Suspicious Writing Pattern* ({ai_prob}% AI Probability)\n\nवाक्यों की बनावट संदिग्ध है, आंशिक रूप से एआई टूल का उपयोग हो सकता है।")
-            else:
-                st.success(f"✅ *{ai_results['verdict']}* ({ai_prob}% AI Probability)\n\nभाषा पूरी तरह से स्वाभाविक और इंसानी भावनाओं से मेल खाती है।")
-
-            # ⏱️ 2. Server Heartbeat & Jitter Analysis
-            st.markdown("#### 2. Server Heartbeat & Jitter Analysis")
-            bot_prob = heartbeat_results["bot_probability"]
-            if bot_prob >= 80:
-                st.error(f"🚨 *{heartbeat_results['verdict']}* ({bot_prob}% Match)\n\n*MAD Score:* {heartbeat_results['median_absolute_deviation_mad']}\n\nयह खाता घड़ी देखकर हर बार ठीक फिक्स अंतराल पर पोस्ट कर रहा है।")
-                for flag in heartbeat_results["flags_triggered"]:
-                    st.caption(f"📌 Flagged: {flag}")
-            elif bot_prob >= 50:
-                st.warning(f"⚠️ *{heartbeat_results['verdict']}* ({bot_prob}% Match)\n\nस्मार्ट बॉट का संदेह है जो पहचान छिपाने के लिए समय में मामूली फेरबदल (Jitter) कर रहा है।")
-            else:
-                st.success(f"✅ *{heartbeat_results['verdict']}* ({bot_prob}% Match)\n\nट्वीट्स के बीच का समय अंतराल पूरी तरह से प्राकृतिक और ऑर्गेनिक है।")
-
-            # 🌐 3. Multi-Platform Network Footprints
-            st.markdown("#### 3. Multi-Platform Network Footprints")
-            if persona_results["cross_platform_spam"]:
-                st.error(f"🚨 *{persona_results['verdict']}* (Risk Score: {persona_results['coordinated_risk_score']}/100)\n\nयह खाता किसी बड़े सिंक्रोनाइज्ड 'बॉट फार्म' या नेटवर्क ग्रिड का हिस्सा है।")
-                for network in persona_results["detected_networks"]:
-                    st.write(f"• {network}")
-            else:
-                st.success("✅ *Safe Web Footprint*\n\nइंटरनेट पर इस यूजरनेम या इसके टेक्स्ट से जुड़ा कोई संदिग्ध क्रॉस-प्लेटफ़ॉर्म स्पैम ग्रिड नहीं मिला।")
-
-        except Exception as advanced_err:
-            # यदि डेटा का स्ट्रक्चर मैच न करे तो मुख्य ऐप क्रैश नहीं होगा
-            st.info("ℹ️ फॉरेंसिक विश्लेषण पूरा करने के लिए लाइव ट्वीट्स और टाइमस्टैम्प्स के डेटा की आवश्यकता है।"
                 # ===== VASUKI BRAIN - COMMENT COMPARISON - FIXED =====
                 fuzzy = 0
                 force_bot = False
