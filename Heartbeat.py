@@ -173,10 +173,11 @@ class ScanXAdvancedEngine:
             "verdict": "Coordinated Inauthentic Behavior (CIB) Flagged" if suspicious_score >= 50 else "Safe",
         }
 
-if _name_ == "_main_":
     engine = ScanXAdvancedEngine()
 
-    print("\n--- 1. Testing AI Stylometry Engine ---")
+ 
+if _name_ == "_main_":  
+print("\n--- 1. Testing AI Stylometry Engine ---")
     ai_tweets = [
         "Cryptocurrency markets exhibit significant volatility today. Ensure proper risk mitigation strategies.",
         "To optimize your portfolio, click the link to join our exclusive network. Financial growth awaits.",
