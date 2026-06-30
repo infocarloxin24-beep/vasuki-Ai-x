@@ -1,15 +1,15 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title="BotRadar - Free Bot Detector",
+    page_title="Humbotix - Free Bot Detector",
     page_icon="assets/logo.png",
     layout="wide"
 )
 
 # Google ke liye Description daal de
 st.markdown("""
-    <meta name="description" content="BotRadar is a free AI bot detector. Check if Twitter, Instagram, or Reddit accounts are bots. Scan any text for AI content. 100% Free Tool.">
-    <meta name="keywords" content="bot detector, ai detector, free bot checker, BotRadar, twitter bot check, fake account detector">
+    <meta name="description" content="Humbotix is a free AI bot detector. Check if Twitter, Instagram, or Reddit accounts are bots. Scan any text for AI content. 100% Free Tool.">
+    <meta name="keywords" content="bot detector, ai detector, free bot checker,Humbotix, twitter bot check, fake account detector">
 """, unsafe_allow_html=True)
 
 import requests
@@ -333,9 +333,9 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-st.set_page_config(page_title="BotRadar - Bot Detector", page_icon="🐍", layout="wide")
-st.title("BotRadar Ai - Universal Bot Detector")
-st.caption("Multi-Platform Account & Text Scanner | Powered by AI")
+st.set_page_config(page_title="HumbotiX - Bot Detector", page_icon="🐍", layout="wide")
+st.title("HumbotiX Ai - Universal Bot Detector")
+st.caption("Global Multi Social-Platform Account & Text Scanner | Powered by AI")
 
 st.info("⚠️ Disclaimer: This tool provides an AI-assisted probability estimate and should not be treated as definitive proof.")
 
@@ -987,6 +987,6 @@ with col_right:
 
 st.markdown("---")
 st.markdown(
-    "<div style='text-align: center; color: #666; padding: 20px 0; font-size: 14px;'> Version: 2 BotRadar Ai - Bot Detector | Made in India | © 2026 All Rights Reserved</div>",
+    "<div style='text-align: center; color: #666; padding: 20px 0; font-size: 14px;'> Version: 2 HumbotiX Ai - Bot Detector | Made in India | © 2026 All Rights Reserved</div>",
     unsafe_allow_html=True
 )
