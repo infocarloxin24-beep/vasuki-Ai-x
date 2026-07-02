@@ -8,3 +8,7 @@ supabase
 nltk
 numpy
 scikit-learn
+streamlit
+streamlit-oauth
+authlib
+requests
