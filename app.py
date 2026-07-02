@@ -339,56 +339,6 @@ st.caption("Global Multi Social-Platform Account & Text Scanner | Powered by AI"
 
 st.info("⚠️ Disclaimer: This tool provides an AI-assisted probability estimate and should not be treated as definitive proof.")
 
-import streamlit as st
-from streamlit_oauth import OAuth2Component
-
-# ===== SOCIAL LOGIN: GOOGLE + GITHUB =====
-with st.sidebar:
-    if 'user' not in st.session_state:
-        st.markdown("##### 🔐 Login")
-
-        # Google Login
-        google = OAuth2Component(
-            client_id=st.secrets["GOOGLE_CLIENT_ID"],
-            client_secret=st.secrets["GOOGLE_CLIENT_SECRET"],
-            authorize_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
-            token_endpoint="https://oauth2.googleapis.com/token",
-        )
-
-        if st.button("Continue with Google", use_container_width=True):
-            result = google.authorize_button(
-                name="Google",
-                redirect_uri="https://tera-domain.com",
-                scope="openid email profile"
-            )
-            if result:
-                st.session_state.user = {
-                    'name': result.get('name'),
-                    'email': result.get('email'),
-                    'picture': result.get('picture'),
-                    'scans_left': 5
-                }
-                st.rerun()
-
-        # GitHub Login
-        if st.button("Continue with GitHub", use_container_width=True):
-            st.info("GitHub login jaldi add karenge")
-
-        st.caption("Login = 5 Free Scans")
-
-    else:
-        # Login ke baad: Naam + Icon + Logout
-        user = st.session_state.user
-        col1, col2 = st.columns([1, 3])
-        with col1:
-            st.image(user['picture'], width=45) # Google se aaya hua icon
-        with col2:
-            st.markdown(f"*{user['name']}*")
-            st.caption(f"Scans: {user['scans_left']}/5")
-
-        if st.button("Logout", use_container_width=True):
-            del st.session_state.user
-            st.rerun()
 
 tab1, tab2 = st.tabs(["🔍 Bot Check", "🌍 Country Check"])
 
