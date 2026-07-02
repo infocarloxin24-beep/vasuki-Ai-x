@@ -816,9 +816,7 @@ with col1:
             f"<div style='text-align:center;padding:6px;border-radius:6px;margin-bottom:8px;background:{color_map[rating]};color:white;font-weight:bold;font-size:12px'>{emoji_map[rating]} {rating}/5</div>",
             unsafe_allow_html=True
         )
-st.markdown("📧 *Feedback:* ", unsafe_allow_html=True)
-st.link_button("Email Me", "mailto:nishadsingh00@gmail.com?subject=HumBotix%20Feedback")
-       
+st.markdown("📧 *Feedback:* [nishadsingh00@gmail.com](mailto:nishadsingh00@gmail.com?subject=HumBotix%20Feedback)")
 with col2:
     with st.expander("🔐 User Login / Sign Up"):
         try:
