@@ -816,24 +816,9 @@ with col1:
             f"<div style='text-align:center;padding:6px;border-radius:6px;margin-bottom:8px;background:{color_map[rating]};color:white;font-weight:bold;font-size:12px'>{emoji_map[rating]} {rating}/5</div>",
             unsafe_allow_html=True
         )
-
-        with st.form(key="feedback_form", clear_on_submit=True):
-            user_suggestion = st.text_area("Suggestion:", placeholder="What should we improve?", key="fb_sugg", height=80)
-            if st.form_submit_button("📢 Submit", use_container_width=True):
-                if user_suggestion:
-                    try:
-                        supabase.table("feedback").insert({
-                            "name": user_name if user_name else "Anonymous",
-                            "rating": rating,
-                            "suggestion": user_suggestion
-                        }).execute()
-                        st.success(f"🎉 Thank you! {emoji_map[rating]} Feedback saved.")
-                        st.balloons()
-                    except Exception as e:
-                        st.error(f"Error saving feedback: {e}")
-                else:
-                    st.warning("Please write a suggestion first")
-
+st.markdown("📧 *Feedback:* ", unsafe_allow_html=True)
+st.link_button("Email Me", "mailto:nishadsingh00@gmail.com?subject=HumBotix%20Feedback")
+       
 with col2:
     with st.expander("🔐 User Login / Sign Up"):
         try:
