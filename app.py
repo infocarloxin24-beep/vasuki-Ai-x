@@ -799,23 +799,7 @@ try:
 except Exception as e:
     st.sidebar.error(f"History load failed: {str(e)[:50]}") 
 
-# ===== FEEDBACK SECTION - CHHOTA BUTTON + POPOVER =====
-st.markdown("---")
-col1, col2, col3 = st.columns([2, 2, 1])
 
-with col1:
-    # ✅ CHHOTA BUTTON - CLICK PE FORM KHULEGA
-    with st.popover("💬 Feedback", use_container_width=False):
-        user_name = st.text_input("Name:", placeholder="Nishad Singh", key="fb_name")
-        rating = st.slider("Rating:", 1, 5, 5, key="fb_rating")
-
-        emoji_map = {1: "😭", 2: "😟", 3: "😐", 4: "😊", 5: "😍"}
-        color_map = {1: "#FF4B4B", 2: "#FFA500", 3: "#FFD700", 4: "#90EE90", 5: "#00C851"}
-
-        st.markdown(
-            f"<div style='text-align:center;padding:6px;border-radius:6px;margin-bottom:8px;background:{color_map[rating]};color:white;font-weight:bold;font-size:12px'>{emoji_map[rating]} {rating}/5</div>",
-            unsafe_allow_html=True
-        )
 st.markdown("📧 *Feedback:* [nishadsingh00@gmail.com](mailto:nishadsingh00@gmail.com?subject=HumBotix%20Feedback)")
 with col2:
     with st.expander("🔐 User Login / Sign Up"):
