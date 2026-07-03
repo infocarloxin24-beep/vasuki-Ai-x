@@ -435,7 +435,30 @@ with tab1:
                         is_verified = x_data.get('is_verified', False)
                         tweet_count = int(x_data.get('tweet_count', 0)) if str(x_data.get('tweet_count', 0)).isdigit() else 0
                         account_age_days = x_data.get('account_age', 0)
-                     
+                                 tweet_times_list = x_data.get('tweet_timestamps', [])  # Timestamps ki list
+                    tweet_text_list = x_data.get('tweet_texts', [])        # Tweet texts ki list
+                    tpd = x_data.get('tweets_per_day', 0)
+                    last_tweet_time = x_data.get('last_tweet_time', 'N/A')
+                    total_posts = tweet_count  # upar wala hi use kar le
+                    flag_text = x_data.get('flags', 'None')
+                    
+                    from analysis import run_all_analysis
+                    
+                    run_all_analysis(
+                        username=clean_username,
+                        tweet_times_list=tweet_times_list,
+                        tweet_text_list=tweet_text_list,
+                        tpd=tpd,
+                        age=account_age_days,
+                        last_tweet=last_tweet_time,
+                        total_posts=total_posts,
+                        verified=is_verified,
+                        flags=flag_text
+                    )
+                    # 👆 YAHAN TAK
+                    
+                    # ===== VASUKI BRAIN - COMMENT COMPARISON - FIXED =====
+                    fuzzy = 0
                 # ===== VASUKI BRAIN - COMMENT COMPARISON - FIXED =====
                 fuzzy = 0
                 force_bot = False
