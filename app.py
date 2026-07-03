@@ -426,7 +426,8 @@ with tab1:
 
             with st.spinner(f"Vasuki Ai Brain Scanning {platform} data... 🧠"):
                 if scan_mode == "Auto - X API/Nitter se data lao" and platform == "Twitter / X":
-                    x_data = fetch_x_data(clean_username)
+                    x_data = fetch_x_data(clean_username)  
+                    
                    if x_data:
                     bio = x_data.get('bio', '')
                     is_verified = x_data.get('is_verified', False)
