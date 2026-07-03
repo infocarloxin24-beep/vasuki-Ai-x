@@ -50,7 +50,7 @@ def check_duplicate_content(tweets):
     with st.expander("Top Repeated Tweets"):
         for text, count in tweet_counts.most_common(3):
             if count > 1:
-                st.write(f"**{count}x:** {text[:80]}...")
+                st.write(f"*{count}x:* {text[:80]}...")
 
     return duplicate_percent
 
@@ -112,7 +112,7 @@ def save_to_history(username, tpd, bot_score, night_pct, dup_pct, cv, age=None, 
     st.session_state.scan_history = st.session_state.scan_history[:10]
 
 def show_sidebar_share():
-    # 👇 Ye 1 baar hi chalega - double title nahi aayega
+    # 👇 TITLE SIRF 1 BAAR DIKHEGA
     st.sidebar.markdown("### 📜 Live Scan History")
 
     if not st.session_state.scan_history:
@@ -123,10 +123,8 @@ def show_sidebar_share():
         with st.sidebar.container():
             verified_text = '✅ Verified' if scan.get('verified') else '❌ Unverified'
             flags = scan.get('flags', 'None')
-            if isinstance(flags, list):
-                flags = '\n• ' + '\n• '.join(flags)
 
-            share_text = f"""*Bot Audit: @{scan['username']}*
+            share_text = f"""Bot Audit: @{scan['username']}
 Bot Risk: {scan.get('bot_score', 0):.0f}%
 Tweets/Day: {scan.get('tpd', 0)}
 Account Age: {scan.get('age', 'N/A')} days
@@ -139,7 +137,7 @@ Scanned: https://humbotix.streamlit.app"""
             encoded = urllib.parse.quote(share_text)
             wa_url = f"https://wa.me/?text={encoded}"
 
-            # 👇 Card + Share icon right corner me
+            # 👇 CARD + SHARE ICON TOP RIGHT
             st.sidebar.markdown(f"""
             <div style="background:#1E1E1E;padding:12px;border-radius:8px;margin-bottom:12px;position:relative;border:1px solid #2D2D2D;">
                 <a href="{wa_url}" target="_blank" title="Share on WhatsApp" style="position:absolute;top:10px;right:10px;">
@@ -177,5 +175,5 @@ def run_all_analysis(username, tweet_times_list, tweet_text_list, tpd, age=None,
     st.metric("Overall Bot Risk Score", f"{bot_score:.0f}%")
 
     save_to_history(username, tpd, bot_score, night_pct, dup_pct, cv, age, last_tweet, total_posts, verified, flags)
-    show_sidebar_share() # 👈 Sidebar last me render karo
+    show_sidebar_share() # 👈 Sidebar last me render hoga
     return bot_score
