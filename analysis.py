@@ -1,4 +1,4 @@
-# analysis.py - Saare 4 feature ek saath
+# analysis.py - 4 Features + Share Icon Per Card
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -88,7 +88,7 @@ def interval_analysis(timestamps):
 
     return cv
 
-# ================== FEATURE 4: SIDEBAR HISTORY + SHARE ICON ==================
+# ================== FEATURE 4: SIDEBAR HISTORY + SHARE BUTTON ==================
 def init_sidebar_history():
     if 'scan_history' not in st.session_state:
         st.session_state.scan_history = []
@@ -112,8 +112,8 @@ def save_to_history(username, tpd, bot_score, night_pct, dup_pct, cv, age=None, 
     st.session_state.scan_history = st.session_state.scan_history[:10]
 
 def show_sidebar_share():
-    # 👇 TITLE SIRF 1 BAAR DIKHEGA
     st.sidebar.markdown("### 📜 Live Scan History")
+    st.sidebar.markdown("<br>", unsafe_allow_html=True)
 
     if not st.session_state.scan_history:
         st.sidebar.info("No scans yet")
@@ -124,6 +124,7 @@ def show_sidebar_share():
             verified_text = '✅ Verified' if scan.get('verified') else '❌ Unverified'
             flags = scan.get('flags', 'None')
 
+            # WhatsApp Share Text
             share_text = f"""Bot Audit: @{scan['username']}
 Bot Risk: {scan.get('bot_score', 0):.0f}%
 Tweets/Day: {scan.get('tpd', 0)}
@@ -137,7 +138,7 @@ Scanned: https://humbotix.streamlit.app"""
             encoded = urllib.parse.quote(share_text)
             wa_url = f"https://wa.me/?text={encoded}"
 
-            # 👇 CARD + SHARE ICON TOP RIGHT
+            # Card + Share Icon
             st.sidebar.markdown(f"""
             <div style="background:#1E1E1E;padding:12px;border-radius:8px;margin-bottom:12px;position:relative;border:1px solid #2D2D2D;">
                 <a href="{wa_url}" target="_blank" title="Share on WhatsApp" style="position:absolute;top:10px;right:10px;">
@@ -175,5 +176,5 @@ def run_all_analysis(username, tweet_times_list, tweet_text_list, tpd, age=None,
     st.metric("Overall Bot Risk Score", f"{bot_score:.0f}%")
 
     save_to_history(username, tpd, bot_score, night_pct, dup_pct, cv, age, last_tweet, total_posts, verified, flags)
-    show_sidebar_share() # 👈 Sidebar last me render hoga
+    show_sidebar_share()
     return bot_score
