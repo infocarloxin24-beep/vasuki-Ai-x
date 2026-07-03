@@ -116,7 +116,7 @@ def show_sidebar_share():
     st.sidebar.markdown("<br>", unsafe_allow_html=True)
 
     if not st.session_state.scan_history:
-        st.sidebar.info("No scans yet")
+        st.sidebar.info("scans list")
         return
 
     for scan in st.session_state.scan_history:
