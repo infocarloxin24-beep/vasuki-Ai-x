@@ -112,7 +112,7 @@ def save_to_history(username, tpd, bot_score, night_pct, dup_pct, cv, age=None, 
     st.session_state.scan_history = st.session_state.scan_history[:10]
 
 def show_sidebar_share():
-    st.sidebar.markdown("### 📜 Live Scan History")
+    
     st.sidebar.markdown("<br>", unsafe_allow_html=True)
 
     if not st.session_state.scan_history:
