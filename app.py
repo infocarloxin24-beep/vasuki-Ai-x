@@ -758,7 +758,7 @@ st.sidebar.header("📜 Live Scan History")
 try:
     scans = supabase.table("scans").select("*").order("created_at", desc=True).limit(10).execute()
     if scans.data:
-       for scan in scans.data:
+      for scan in scans.data:
     score = scan.get('score', 0)
     is_bot = score >= 50
     verdict_icon = "🤖 Bot" if is_bot else "✅ Human"
