@@ -1,17 +1,5 @@
 import streamlit as st
 from analysis import run_all_analysis, init_sidebar_history, show_sidebar_share
-st.set_page_config(
-    page_title="Humbotix - Free Bot Detector",
-    page_icon="assets/logo.png",
-    layout="wide"
-)
-
-# Google ke liye Description daal de
-st.markdown("""
-  init_sidebar_history()
-show_sidebar_share(
-""", unsafe_allow_html=True)
-
 import requests
 from supabase import create_client, Client
 from datetime import datetime
@@ -23,6 +11,22 @@ import pytz
 import pycountry
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
+
+# ✅ Sabse pehle ye - Streamlit ka rule
+st.set_page_config(
+    page_title="Humbotix - Free Bot Detector",
+    page_icon="assets/logo.png",
+    layout="wide"
+)
+
+# ✅ Uske turant baad ye 2 line
+init_sidebar_history()
+show_sidebar_share()
+
+# Google ke liye Description
+st.markdown("""
+<meta name="description" content="Humbotix - Free AI Bot Detector for Twitter, Instagram, YouTube">
+""", unsafe_allow_html=True)
 
 # SECRETS SE TOKEN LO
 ADMIN_PASS = st.secrets.get("ADMIN_PASS", "admin123")
@@ -333,12 +337,10 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-st.set_page_config(page_title="HumbotiX - Bot Detector", page_icon="🐍", layout="wide")
 st.title("HumbotiX Ai - Universal Bot Detector")
 st.caption("Global Multi Social-Platform Account & Text Scanner | Powered by AI")
 
 st.info("⚠️ Disclaimer: This tool provides an AI-assisted probability estimate and should not be treated as definitive proof.")
-
 
 tab1, tab2 = st.tabs(["🔍 Bot Check", "🌍 Country Check"])
 
@@ -426,36 +428,32 @@ with tab1:
 
             with st.spinner(f"Vasuki Ai Brain Scanning {platform} data... 🧠"):
                 if scan_mode == "Auto - X API/Nitter se data lao" and platform == "Twitter / X":
-                    x_data = fetch_x_data(clean_username)  
-                    
-                   if x_data:
-                    bio = x_data.get('bio', '')
-                    is_verified = x_data.get('is_verified', False)
-                    tweet_count = int(x_data.get('tweet_count', 0)) if str(x_data.get('tweet_count', 0)).isdigit() else 0
-                    account_age_days = x_data.get('account_age', 0)
-                    tweet_times_list = x_data.get('tweet_timestamps', [])
-                    tweet_text_list = x_data.get('tweet_texts', [])
-                    tpd = x_data.get('tweets_per_day', 0)
-                    last_tweet_time = x_data.get('last_tweet_time', 'N/A')
-                    total_posts = tweet_count
-                    flag_text = x_data.get('flags', 'None')
+                    x_data = fetch_x_data(clean_username)
 
-                    run_all_analysis(
-                        username=clean_username,
-                        tweet_times_list=tweet_times_list,
-                        tweet_text_list=tweet_text_list,
-                        tpd=tpd,
-                        age=account_age_days,
-                        last_tweet=last_tweet_time,
-                        total_posts=total_posts,
-                        verified=is_verified,
-                        flags=flag_text
-                    )
-                    )
-                    # 👆 YAHAN TAK
-                    
-                    # ===== VASUKI BRAIN - COMMENT COMPARISON - FIXED =====
-                    fuzzy = 0
+                    if x_data:
+                        bio = x_data.get('bio', '')
+                        is_verified = x_data.get('is_verified', False)
+                        tweet_count = int(x_data.get('tweet_count', 0)) if str(x_data.get('tweet_count', 0)).isdigit() else 0
+                        account_age_days = x_data.get('account_age', 0)
+                        tweet_times_list = x_data.get('tweet_timestamps', [])
+                        tweet_text_list = x_data.get('tweet_texts', [])
+                        tpd = x_data.get('tweets_per_day', 0)
+                        last_tweet_time = x_data.get('last_tweet_time', 'N/A')
+                        total_posts = tweet_count
+                        flag_text = x_data.get('flags', 'None')
+
+                        run_all_analysis(
+                            username=clean_username,
+                            tweet_times_list=tweet_times_list,
+                            tweet_text_list=tweet_text_list,
+                            tpd=tpd,
+                            age=account_age_days,
+                            last_tweet=last_tweet_time,
+                            total_posts=total_posts,
+                            verified=is_verified,
+                            flags=flag_text
+                        )
+
                 # ===== VASUKI BRAIN - COMMENT COMPARISON - FIXED =====
                 fuzzy = 0
                 force_bot = False
@@ -706,7 +704,6 @@ with tab1:
                                         <div style="font-size: 11px; color: white;">
                                             {country['time']} {country['icon']}
                                         </div>
-                                    </div>
                                     """, unsafe_allow_html=True)
 
                 except Exception as e:
@@ -772,6 +769,8 @@ try:
             tweet_time = scan.get('tweet_time', 'N/A') or 'N/A'
             total_posts = scan.get('tweet_count', 0) or 0
             flags = scan.get('flags', 'None') or 'None'
+            verified_text = "✅ Verified" if scan 
+
             verified_text = "✅ Verified" if scan.get('is_verified', False) else "❌ Unverified"
             created_at = scan.get('created_at', '')
             time_display = created_at[:16].replace('T', ' ') if created_at else 'N/A'
@@ -799,12 +798,12 @@ try:
                 <div style="color: #64748b; font-size: 9px; margin-top: 4px;">
                     {time_display}
                 </div>
+            </div>
             """, unsafe_allow_html=True)
     else:
         st.sidebar.info("No scans")
 except Exception as e:
-    st.sidebar.error(f"History load failed: {str(e)[:50]}") 
-
+    st.sidebar.error(f"History load failed: {str(e)[:50]}")
 
 st.markdown("📧 *Feedback:* [nishadsingh00@gmail.com](mailto:nishadsingh00@gmail.com?subject=HumBotix%20Feedback)")
 with col2:
@@ -878,7 +877,7 @@ with col2:
 
             st.markdown("""
             <style>
-       .social-btn {
+      .social-btn {
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -895,11 +894,11 @@ with col2:
                 transition: all 0.2s;
                 text-decoration: none;
             }
-       .social-btn:hover {
+      .social-btn:hover {
                 background: #f8f9fa;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
-       .social-btn img {
+      .social-btn img {
                 width: 20px;
                 height: 20px;
             }
