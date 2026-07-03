@@ -8,3 +8,4 @@ supabase
 nltk
 numpy
 scikit-learn
+plotly
