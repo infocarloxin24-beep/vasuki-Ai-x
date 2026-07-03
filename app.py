@@ -1,5 +1,8 @@
 import streamlit as st
+from analysis import run_all_analysis, init_sidebar_history, show_sidebar_share
 
+init_sidebar_history()
+show_sidebar_share()
 st.set_page_config(
     page_title="Humbotix - Free Bot Detector",
     page_icon="assets/logo.png",
@@ -432,7 +435,18 @@ with tab1:
                         is_verified = x_data.get('is_verified', False)
                         tweet_count = int(x_data.get('tweet_count', 0)) if str(x_data.get('tweet_count', 0)).isdigit() else 0
                         account_age_days = x_data.get('account_age', 0)
-                        st.success("✅ Data fetched from X API/Nitter")
+                        st.success("✅ Data fetched from X API/Nitter") 
+                        tweet_times_list = x_data.get('tweet_times', [])
+                    tweet_text_list = x_data.get('tweet_texts', [])
+                    
+                    if account_age_days > 0:
+                        tpd = tweet_count / account_age_days
+                    else:
+                        tpd = 0
+                    
+                    if tweet_times_list:
+                        run_all_analysis(clean_username, tweet_times_list, tweet_text_list, tpd)
+                        st.rerun()
                     else:
                         st.warning("⚠️ Data not found. Use Manual mode.")
 
