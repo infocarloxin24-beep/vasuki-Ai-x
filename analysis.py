@@ -10,7 +10,7 @@ def init_sidebar_history():
 
 def show_sidebar_share():
     with st.sidebar:
-        st.title("📊 Vasuki AI")
+        st.title("Vasuki AI")
         st.markdown("---")
 
         if st.session_state.scan_history:
