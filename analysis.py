@@ -5,6 +5,7 @@ import numpy as np
 import plotly.express as px
 from collections import Counter
 import urllib.parse
+from datetime import datetime
 
 # ================== FEATURE 1: TIME HEATMAP ==================
 def show_time_heatmap(timestamps):
@@ -93,6 +94,7 @@ def init_sidebar_history():
         st.session_state.scan_history = []
 
 def save_to_history(username, tpd, bot_score, night_pct, dup_pct, cv, age=None, last_tweet=None, total_posts=None, verified=None, flags=None):
+    scan_time = datetime.now().strftime("%Y-%m-%d %H:%M")
     st.session_state.scan_history.insert(0, {
         'username': username,
         'tpd': tpd,
@@ -104,12 +106,14 @@ def save_to_history(username, tpd, bot_score, night_pct, dup_pct, cv, age=None, 
         'last_tweet': last_tweet,
         'total_posts': total_posts,
         'verified': verified,
-        'flags': flags
+        'flags': flags,
+        'scan_time': scan_time
     })
     st.session_state.scan_history = st.session_state.scan_history[:10]
 
 def show_sidebar_share():
-    st.sidebar.title("📜 Live Scan History")
+    st.sidebar.markdown("### 📜 Live Scan History")
+    st.sidebar.markdown("<br>", unsafe_allow_html=True)
 
     if not st.session_state.scan_history:
         st.sidebar.info("No scans yet")
@@ -118,8 +122,10 @@ def show_sidebar_share():
     for scan in st.session_state.scan_history:
         with st.sidebar.container():
             # Share text for WhatsApp
-            flag_text = scan.get('flags', 'None')
             verified_text = '✅ Verified' if scan.get('verified') else '❌ Unverified'
+            flags = scan.get('flags', 'None')
+            if isinstance(flags, list):
+                flags = '\n• ' + '\n• '.join(flags)
 
             share_text = f"""Bot Audit: @{scan['username']}
 Bot Risk: {scan.get('bot_score', 0):.0f}%
@@ -128,58 +134,49 @@ Account Age: {scan.get('age', 'N/A')} days
 Last Tweet: {scan.get('last_tweet', 'N/A')}
 Total Posts: {scan.get('total_posts', 0)}
 Verified: {verified_text}
-Night Posts: {scan.get('night', 0):.1f}%
-Duplicate: {scan.get('duplicate', 0):.1f}%
-Interval CV: {scan.get('cv', 0):.2f}
-Flags: {flag_text}
-Scanned: https://humbotix.streamlit.app""" # 👈 Apna URL daal
+⚠️ Flags: {flags}
+Scanned: https://humbotix.streamlit.app"""
 
             encoded = urllib.parse.quote(share_text)
             wa_url = f"https://wa.me/?text={encoded}"
 
-            col1, col2 = st.columns([10, 1])
-
-            with col1:
-                st.markdown(f"*@{scan['username']} {scan.get('bot_score', 0):.0f}% Bot*")
-                st.caption(f"Tweets/Day: {scan.get('tpd', 0)}")
-                st.caption(f"Account Age: {scan.get('age', 'N/A')} days")
-                st.caption(f"Last Tweet: {scan.get('last_tweet', 'N/A')}")
-                st.caption(f"Total Posts: {scan.get('total_posts', 0)}")
-                st.caption(f"Verified: {verified_text}")
-                st.caption(f"⚠️ Flags: {flag_text}")
-
-            with col2:
-                # Share icon - chota 18px
-                st.markdown(
-                    f'<a href="{wa_url}" target="_blank" title="Share on WhatsApp">'
-                    f'<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" style="margin-top:4px;cursor:pointer;">'
-                    f'<circle cx="18" cy="5" r="3"></circle>'
-                    f'<circle cx="6" cy="12" r="3"></circle>'
-                    f'<circle cx="18" cy="19" r="3"></circle>'
-                    f'<line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>'
-                    f'<line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>'
-                    f'</svg></a>',
-                    unsafe_allow_html=True
-                )
-
-        st.sidebar.divider()
+            # 👇 POORA CARD + SHARE ICON - TERE SCREENSHOT JAISA
+            st.sidebar.markdown(f"""
+            <div style="background:#1E1E1E;padding:12px;border-radius:8px;margin-bottom:12px;position:relative;border:1px solid #2D2D2D;">
+                <a href="{wa_url}" target="_blank" title="Share on WhatsApp" style="position:absolute;top:10px;right:10px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2">
+                        <circle cx="18" cy="5" r="3"></circle>
+                        <circle cx="6" cy="12" r="3"></circle>
+                        <circle cx="18" cy="19" r="3"></circle>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                    </svg>
+                </a>
+                <p style="margin:0;font-weight:600;color:#FFF;font-size:14px;">@{scan['username']} {scan.get('bot_score', 0):.0f}% Bot</p>
+                <p style="margin:6px 0 0 0;color:#9CA3AF;font-size:12px;">📊 Tweets/Day: {scan.get('tpd', 0)}</p>
+                <p style="margin:2px 0 0 0;color:#9CA3AF;font-size:12px;">📅 Account Age: {scan.get('age', 'N/A')} days</p>
+                <p style="margin:2px 0 0 0;color:#9CA3AF;font-size:12px;">🕒 Last Tweet: {scan.get('last_tweet', 'N/A')}</p>
+                <p style="margin:2px 0 0 0;color:#9CA3AF;font-size:12px;">📝 Total Posts: {scan.get('total_posts', 0)}</p>
+                <p style="margin:2px 0 0 0;color:#9CA3AF;font-size:12px;">Verified: {verified_text}</p>
+                <p style="margin:6px 0 0 0;color:#F59E0B;font-size:12px;">⚠️ Flags:</p>
+                <p style="margin:2px 0 0 0;color:#9CA3AF;font-size:11px;white-space:pre-line;">{flags}</p>
+                <p style="margin:8px 0 0 0;color:#6B7280;font-size:10px;">{scan.get('scan_time', '')}</p>
+            </div>
+            """, unsafe_allow_html=True)
 
 # ================== MASTER FUNCTION ==================
 def run_all_analysis(username, tweet_times_list, tweet_text_list, tpd, age=None, last_tweet=None, total_posts=None, verified=None, flags=None):
-    """Ye ek function call karte hi saare 4 feature chal jayenge"""
     init_sidebar_history()
-    show_sidebar_share()
+    show_sidebar_share() # Sidebar render hoga
 
     night_pct = show_time_heatmap(tweet_times_list)
     dup_pct = check_duplicate_content(tweet_text_list)
     cv = interval_analysis(tweet_times_list)
 
-    # Bot score calculate
     bot_score = (night_pct * 0.4) + (dup_pct * 0.4) + ((1-cv) * 20 if cv<1 else 0)
     bot_score = min(100, max(0, bot_score))
 
     st.metric("Overall Bot Risk Score", f"{bot_score:.0f}%")
 
-    # Sidebar me save with extra data
     save_to_history(username, tpd, bot_score, night_pct, dup_pct, cv, age, last_tweet, total_posts, verified, flags)
     return bot_score
