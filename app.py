@@ -435,11 +435,15 @@ with tab1:
                    account_age_days = x_data.get('account_age', 0)
                     tweet_times_list = x_data.get('tweet_timestamps', [])
                     tweet_text_list = x_data.get('tweet_texts', [])
-                    tpd = x_data.get('tweets_per_day', 0)
-                    last_tweet_time = x_data.get('last_tweet_time', 'N/A')
-                    total_posts = tweet_count
-                    flag_text = x_data.get('flags', 'None')
-                    
+                   account_age_days = x_data.get('account_age', 0)
+                    # TEMP TEST DATA - Baad me hata dena
+                    tweet_times_list = ["2026-01-01 10:00:00", "2026-01-01 10:05:00", "2026-01-01 14:00:00"]
+                    tweet_text_list = ["Hello", "Hello", "World"]
+                    tpd = 50
+                    last_tweet_time = "2026-01-01 14:00:00"
+                    total_posts = 100
+                    flag_text = "Test"
+
                     run_all_analysis(
                         username=clean_username,
                         tweet_times_list=tweet_times_list,
@@ -450,6 +454,7 @@ with tab1:
                         total_posts=total_posts,
                         verified=is_verified,
                         flags=flag_text
+                    )
                     )
                     # 👆 YAHAN TAK
                     
