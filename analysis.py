@@ -1,4 +1,4 @@
-# analysis.py - 4 Features + Share Icon Per Card
+# analysis.py - 4 Features + WhatsApp Share Button Per Card
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -138,7 +138,7 @@ Scanned: https://humbotix.streamlit.app"""
             encoded = urllib.parse.quote(share_text)
             wa_url = f"https://wa.me/?text={encoded}"
 
-            # Card + Share Icon
+            # Card + Share Icon Top Right
             st.sidebar.markdown(f"""
             <div style="background:#1E1E1E;padding:12px;border-radius:8px;margin-bottom:12px;position:relative;border:1px solid #2D2D2D;">
                 <a href="{wa_url}" target="_blank" title="Share on WhatsApp" style="position:absolute;top:10px;right:10px;">
