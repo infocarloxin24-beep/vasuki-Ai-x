@@ -439,6 +439,9 @@ with tab1:
                         tweet_times_list = x_data.get('tweet_times', [])
                     tweet_text_list = x_data.get('tweet_texts', [])
                     
+st.write("DEBUG - Times mile:", len(tweet_times_list))  # 👈 Ye add kar
+st.write("DEBUG - Texts mile:", len(tweet_text_list))   # 👈 Ye add kar
+
                     if account_age_days > 0:
                         tpd = tweet_count / account_age_days
                     else:
