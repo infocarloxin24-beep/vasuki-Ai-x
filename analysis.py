@@ -65,7 +65,7 @@ def check_duplicate_content(tweets):
     with st.expander("Top Repeated Tweets"):
         for text, count in tweet_counts.most_common(3):
             if count > 1:
-                st.write(f"**{count}x:** {text[:80]}...")
+                st.write(f"*{count}x:* {text[:80]}...")
 
     return duplicate_percent
 
@@ -131,11 +131,11 @@ def show_sidebar_share():
         col1, col2 = st.sidebar.columns([5, 1])
 
         with col1:
-            st.markdown(f"**@{scan['username']}**")
+            st.markdown(f"*@{scan['username']}*")
             st.caption(f"Risk: {scan['bot_score']:.0f}% | TPD: {scan['tpd']:.1f}")
 
         with col2:
-            share_text = f"""*Bot Audit: @{scan['username']}*
+            share_text = f"""Bot Audit: @{scan['username']}
 TPD: {scan['tpd']:.1f}
 Bot Risk: {scan['bot_score']:.0f}%
 Night Posts: {scan['night']:.1f}%
