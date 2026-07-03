@@ -1,8 +1,5 @@
 import streamlit as st
 from analysis import run_all_analysis, init_sidebar_history, show_sidebar_share
-
-init_sidebar_history()
-show_sidebar_share()
 st.set_page_config(
     page_title="Humbotix - Free Bot Detector",
     page_icon="assets/logo.png",
@@ -11,8 +8,8 @@ st.set_page_config(
 
 # Google ke liye Description daal de
 st.markdown("""
-    <meta name="description" content="Humbotix is a free AI bot detector. Check if Twitter, Instagram, or Reddit accounts are bots. Scan any text for AI content. 100% Free Tool.">
-    <meta name="keywords" content="bot detector, ai detector, free bot checker,Humbotix, twitter bot check, fake account detector">
+  init_sidebar_history()
+show_sidebar_share(
 """, unsafe_allow_html=True)
 
 import requests
