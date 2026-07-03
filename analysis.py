@@ -87,19 +87,24 @@ def interval_analysis(timestamps):
 
     return cv
 
-# ================== FEATURE 4: SIDEBAR SHARE ==================
+# ================== FEATURE 4: SIDEBAR HISTORY + SHARE ICON ==================
 def init_sidebar_history():
     if 'scan_history' not in st.session_state:
         st.session_state.scan_history = []
 
-def save_to_history(username, tpd, bot_score, night_pct, dup_pct, cv):
+def save_to_history(username, tpd, bot_score, night_pct, dup_pct, cv, age=None, last_tweet=None, total_posts=None, verified=None, flags=None):
     st.session_state.scan_history.insert(0, {
         'username': username,
         'tpd': tpd,
         'bot_score': bot_score,
         'night': night_pct,
         'duplicate': dup_pct,
-        'cv': cv
+        'cv': cv,
+        'age': age,
+        'last_tweet': last_tweet,
+        'total_posts': total_posts,
+        'verified': verified,
+        'flags': flags
     })
     st.session_state.scan_history = st.session_state.scan_history[:10]
 
@@ -112,29 +117,42 @@ def show_sidebar_share():
 
     for scan in st.session_state.scan_history:
         with st.sidebar.container():
-            # 👇 Har card ka share text - ye WhatsApp pe jayega
+            # Share text for WhatsApp
+            flag_text = scan.get('flags', 'None')
+            verified_text = '✅ Verified' if scan.get('verified') else '❌ Unverified'
+
             share_text = f"""Bot Audit: @{scan['username']}
-Bot Risk: {scan['bot_score']:.0f}%
-TPD: {scan['tpd']:.1f}
-Night Posts: {scan['night']:.1f}%
-Duplicate: {scan['duplicate']:.1f}%
-Interval CV: {scan['cv']:.2f}
-Scanned via BotCheck: https://humbotix.streamlit.app""" # 👈 Yahan apna URL daal
+Bot Risk: {scan.get('bot_score', 0):.0f}%
+Tweets/Day: {scan.get('tpd', 0)}
+Account Age: {scan.get('age', 'N/A')} days
+Last Tweet: {scan.get('last_tweet', 'N/A')}
+Total Posts: {scan.get('total_posts', 0)}
+Verified: {verified_text}
+Night Posts: {scan.get('night', 0):.1f}%
+Duplicate: {scan.get('duplicate', 0):.1f}%
+Interval CV: {scan.get('cv', 0):.2f}
+Flags: {flag_text}
+Scanned: https://humbotix.streamlit.app""" # 👈 Apna URL daal
 
             encoded = urllib.parse.quote(share_text)
             wa_url = f"https://wa.me/?text={encoded}"
 
-            col1, col2 = st.columns([5, 1])
+            col1, col2 = st.columns([10, 1])
 
             with col1:
-                st.markdown(f"*@{scan['username']}*")
-                st.caption(f"Risk: {scan['bot_score']:.0f}% | TPD: {scan['tpd']:.1f}")
+                st.markdown(f"*@{scan['username']} {scan.get('bot_score', 0):.0f}% Bot*")
+                st.caption(f"Tweets/Day: {scan.get('tpd', 0)}")
+                st.caption(f"Account Age: {scan.get('age', 'N/A')} days")
+                st.caption(f"Last Tweet: {scan.get('last_tweet', 'N/A')}")
+                st.caption(f"Total Posts: {scan.get('total_posts', 0)}")
+                st.caption(f"Verified: {verified_text}")
+                st.caption(f"⚠️ Flags: {flag_text}")
 
             with col2:
-                # 👇 Tera bheja hua Share icon - chota size 20px
+                # Share icon - chota 18px
                 st.markdown(
                     f'<a href="{wa_url}" target="_blank" title="Share on WhatsApp">'
-                    f'<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:8px;cursor:pointer;">'
+                    f'<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" style="margin-top:4px;cursor:pointer;">'
                     f'<circle cx="18" cy="5" r="3"></circle>'
                     f'<circle cx="6" cy="12" r="3"></circle>'
                     f'<circle cx="18" cy="19" r="3"></circle>'
@@ -147,10 +165,10 @@ Scanned via BotCheck: https://humbotix.streamlit.app""" # 👈 Yahan apna URL da
         st.sidebar.divider()
 
 # ================== MASTER FUNCTION ==================
-def run_all_analysis(username, tweet_times_list, tweet_text_list, tpd):
+def run_all_analysis(username, tweet_times_list, tweet_text_list, tpd, age=None, last_tweet=None, total_posts=None, verified=None, flags=None):
     """Ye ek function call karte hi saare 4 feature chal jayenge"""
     init_sidebar_history()
-    show_sidebar_share() # Ye history + share icon dikhayega
+    show_sidebar_share()
 
     night_pct = show_time_heatmap(tweet_times_list)
     dup_pct = check_duplicate_content(tweet_text_list)
@@ -162,6 +180,6 @@ def run_all_analysis(username, tweet_times_list, tweet_text_list, tpd):
 
     st.metric("Overall Bot Risk Score", f"{bot_score:.0f}%")
 
-    # Sidebar me save
-    save_to_history(username, tpd, bot_score, night_pct, dup_pct, cv)
+    # Sidebar me save with extra data
+    save_to_history(username, tpd, bot_score, night_pct, dup_pct, cv, age, last_tweet, total_posts, verified, flags)
     return bot_score
