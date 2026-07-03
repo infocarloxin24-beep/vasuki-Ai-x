@@ -25,7 +25,7 @@ def show_sidebar_share():
                 st.code(share_text, language=None)
                 st.success("Copied! Share karo")
         else:
-            st.info("Scan karo. Results yahan aayenge.")
+            st.info(" Recently Scan List ")
 
 def run_all_analysis(username, tweet_times_list, tweet_text_list, tpd, age, last_tweet, total_posts, verified, flags):
 
