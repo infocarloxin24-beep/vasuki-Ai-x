@@ -769,8 +769,6 @@ try:
             tweet_time = scan.get('tweet_time', 'N/A') or 'N/A'
             total_posts = scan.get('tweet_count', 0) or 0
             flags = scan.get('flags', 'None') or 'None'
-            verified_text = "✅ Verified" if scan 
-
             verified_text = "✅ Verified" if scan.get('is_verified', False) else "❌ Unverified"
             created_at = scan.get('created_at', '')
             time_display = created_at[:16].replace('T', ' ') if created_at else 'N/A'
