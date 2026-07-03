@@ -1,5 +1,20 @@
 import streamlit as st
 from analysis import run_all_analysis, init_sidebar_history, show_sidebar_share
+
+init_sidebar_history()
+show_sidebar_share()
+st.set_page_config(
+    page_title="Humbotix - Free Bot Detector",
+    page_icon="assets/logo.png",
+    layout="wide"
+)
+
+# Google ke liye Description daal de
+st.markdown("""
+    <meta name="description" content="Humbotix is a free AI bot detector. Check if Twitter, Instagram, or Reddit accounts are bots. Scan any text for AI content. 100% Free Tool.">
+    <meta name="keywords" content="bot detector, ai detector, free bot checker,Humbotix, twitter bot check, fake account detector">
+""", unsafe_allow_html=True)
+
 import requests
 from supabase import create_client, Client
 from datetime import datetime
@@ -11,22 +26,6 @@ import pytz
 import pycountry
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
-
-# ✅ Sabse pehle ye - Streamlit ka rule
-st.set_page_config(
-    page_title="Humbotix - Free Bot Detector",
-    page_icon="assets/logo.png",
-    layout="wide"
-)
-
-# ✅ Uske turant baad ye 2 line
-init_sidebar_history()
-show_sidebar_share()
-
-# Google ke liye Description
-st.markdown("""
-<meta name="description" content="Humbotix - Free AI Bot Detector for Twitter, Instagram, YouTube">
-""", unsafe_allow_html=True)
 
 # SECRETS SE TOKEN LO
 ADMIN_PASS = st.secrets.get("ADMIN_PASS", "admin123")
@@ -337,10 +336,12 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
+st.set_page_config(page_title="HumbotiX - Bot Detector", page_icon="🐍", layout="wide")
 st.title("HumbotiX Ai - Universal Bot Detector")
 st.caption("Global Multi Social-Platform Account & Text Scanner | Powered by AI")
 
 st.info("⚠️ Disclaimer: This tool provides an AI-assisted probability estimate and should not be treated as definitive proof.")
+
 
 tab1, tab2 = st.tabs(["🔍 Bot Check", "🌍 Country Check"])
 
@@ -349,7 +350,7 @@ with tab1:
 
     platform = st.selectbox(
         "Select Platform:",
-        ["Twitter / X", "Facebook", "Instagram", "YouTube", "LinkedIn", "WhatsApp", "Reddit", "TikTok", "Other Platforms"]
+        ["Twitter / X", "Facebook", "Instagram", "YouTube", "LinkedIn", "WhatsApp", "Other Platforms"]
     )
 
     username = st.text_input(f"{platform} Username / Profile Link:", placeholder="@username or paste profile URL")
@@ -429,31 +430,12 @@ with tab1:
             with st.spinner(f"Vasuki Ai Brain Scanning {platform} data... 🧠"):
                 if scan_mode == "Auto - X API/Nitter se data lao" and platform == "Twitter / X":
                     x_data = fetch_x_data(clean_username)
-
                     if x_data:
                         bio = x_data.get('bio', '')
                         is_verified = x_data.get('is_verified', False)
                         tweet_count = int(x_data.get('tweet_count', 0)) if str(x_data.get('tweet_count', 0)).isdigit() else 0
                         account_age_days = x_data.get('account_age', 0)
-                        tweet_times_list = x_data.get('tweet_timestamps', [])
-                        tweet_text_list = x_data.get('tweet_texts', [])
-                        tpd = x_data.get('tweets_per_day', 0)
-                        last_tweet_time = x_data.get('last_tweet_time', 'N/A')
-                        total_posts = tweet_count
-                        flag_text = x_data.get('flags', 'None')
-
-                        run_all_analysis(
-                            username=clean_username,
-                            tweet_times_list=tweet_times_list,
-                            tweet_text_list=tweet_text_list,
-                            tpd=tpd,
-                            age=account_age_days,
-                            last_tweet=last_tweet_time,
-                            total_posts=total_posts,
-                            verified=is_verified,
-                            flags=flag_text
-                        )
-
+                     
                 # ===== VASUKI BRAIN - COMMENT COMPARISON - FIXED =====
                 fuzzy = 0
                 force_bot = False
@@ -704,6 +686,7 @@ with tab1:
                                         <div style="font-size: 11px; color: white;">
                                             {country['time']} {country['icon']}
                                         </div>
+                                    </div>
                                     """, unsafe_allow_html=True)
 
                 except Exception as e:
@@ -752,7 +735,7 @@ with tab2:
                 st.error("History save failed")
         else:
             st.success(f"✅ Match! Both countries same: {claimed}")
-    st.balloons()
+            st.balloons()
 
 st.sidebar.header("📜 Live Scan History")
 try:
@@ -772,95 +755,36 @@ try:
             verified_text = "✅ Verified" if scan.get('is_verified', False) else "❌ Unverified"
             created_at = scan.get('created_at', '')
             time_display = created_at[:16].replace('T', ' ') if created_at else 'N/A'
-
             st.sidebar.markdown(f"""
             <div style="
                 background: #0f172a;
                 border: 1px solid #1e293b;
-                border-radius: 12px;
-                padding: 12px;
-                margin-bottom: 8px;
-            ">
-                <div style="font-size: 14px; font-weight: 600; color: #e2e8f0; margin-bottom: 6px;">
-                    {verdict_icon} {username_display}
-                </div>
-                <div style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
-                    <b>Score:</b> {score}/100<br>
-                    <b>TPD:</b> {tpd} | <b>Age:</b> {account_age}d<br>
-                    <b>Posts:</b> {total_posts} | <b>Flags:</b> {flags}<br>
-                    <b>Verified:</b> {verified_text}<br>
-                    <b>Last Scan:</b> {time_display}
-                </div>
-                <a href="https://twitter.com/intent/tweet?text=Bot%20Scan%3A%20{username_display}%20is%20{verdict_icon}%20with%20score%20{score}%2F100&url=" target="_blank" style="text-decoration: none;">
-                    <button style="
-                        width: 100%;
-                        margin-top: 10px;
-                        background: #1d9bf0;
-                        color: white;
-                        border: none;
-                        padding: 8px 12px;
-                        border-radius: 8px;
-                        font-weight: 600;
-                        font-size: 13px;
-                        cursor: pointer;
-                    ">
-                        🔗 Share on X
-                    </button>
-                </a>
-            </div>
-            """, unsafe_allow_html=True)
-except Exception as e:
-    st.sidebar.error(f"History load failed: {e}")
-    username_display = str(username_raw).replace('[Twitter / X] ', '').replace('[CountryCheck] ', '').replace('[Facebook] ', '').replace('[Instagram] ', '').replace('[YouTube] ', '').replace('[LinkedIn] ', '').replace('[WhatsApp] ', '').replace('[Other Platforms] ', '') if username_raw else 'Unknown'
-    tpd = scan.get('tpd', 0) or 0
-    account_age = scan.get('account_age', 0) or 0
-    tweet_time = scan.get('tweet_time', 'N/A') or 'N/A'
-    total_posts = scan.get('tweet_count', 0) or 0
-    flags = scan.get('flags', 'None') or 'None'
-    verified_text = "✅ Verified" if scan.get('is_verified', False) else "❌ Unverified"
-    created_at = scan.get('created_at', '')
-    time_display = created_at[:16].replace('T', ' ') if created_at else 'N/A'
-
-    st.sidebar.markdown(f"""
-    <div style="
-        background: #0f172a;
-        border: 1px solid #1e293b;
-        border-radius: 12px;
-        padding: 12px;
-        margin-bottom: 8px;
-    ">
-        <div style="font-size: 14px; font-weight: 600; color: #e2e8f0; margin-bottom: 6px;">
-            {verdict_icon} {username_display}
-        </div>
-        <div style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
-            <b>Score:</b> {score}/100<br>
-            <b>TPD:</b> {tpd} | <b>Age:</b> {account_age}d<br>
-            <b>Posts:</b> {total_posts} | <b>Flags:</b> {flags}<br>
-            <b>Verified:</b> {verified_text}<br>
-            <b>Last Scan:</b> {time_display}
-        </div>
-        <a href="https://twitter.com/intent/tweet?text=Bot%20Scan%3A%20{username_display}%20is%20{verdict_icon}%20with%20score%20{score}%2F100&url=" target="_blank" style="text-decoration: none;">
-            <button style="
-                width: 100%;
-                margin-top: 10px;
-                background: #1d9bf0;
-                color: white;
-                border: none;
-                padding: 8px 12px;
                 border-radius: 8px;
-                font-weight: 600;
-                font-size: 13px;
-                cursor: pointer;
+                padding: 8px;
+                margin-bottom: 8px;
+                font-size: 11px;
+                line-height: 1.4;
+                color: #e2e8f0;
             ">
-                🔗 Share on X
-            </button>
-        </a>
-    </div>
-    """, unsafe_allow_html=True)
+                <div style="font-weight: bold; margin-bottom: 4px; color: white;">
+                    {username_display} {score}% {verdict_icon}
+                </div>
+                 <div>📊 Tweets/Day: {tpd}</div>
+                <div>📅 Account Age: {account_age} days</div>
+                <div>⏰ Last Tweet: {tweet_time}</div>
+                <div>📝 Total Posts: {total_posts}</div>
+                <div>Verified: {verified_text}</div>
+                <div style="margin-top: 4px;">⚠️ Flags:</div>
+                <div style="font-size: 10px; color: #94a3b8;">• {str(flags).replace(', ', '<br>• ')}</div>
+                <div style="color: #64748b; font-size: 9px; margin-top: 4px;">
+                    {time_display}
+                </div>
+            """, unsafe_allow_html=True)
     else:
         st.sidebar.info("No scans")
 except Exception as e:
-    st.sidebar.error(f"History load failed: {str(e)[:50]}")
+    st.sidebar.error(f"History load failed: {str(e)[:50]}") 
+
 
 st.markdown("📧 *Feedback:* [nishadsingh00@gmail.com](mailto:nishadsingh00@gmail.com?subject=HumBotix%20Feedback)")
 with col2:
@@ -934,7 +858,7 @@ with col2:
 
             st.markdown("""
             <style>
-      .social-btn {
+       .social-btn {
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -951,11 +875,11 @@ with col2:
                 transition: all 0.2s;
                 text-decoration: none;
             }
-      .social-btn:hover {
+       .social-btn:hover {
                 background: #f8f9fa;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
-      .social-btn img {
+       .social-btn img {
                 width: 20px;
                 height: 20px;
             }
