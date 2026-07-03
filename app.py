@@ -427,22 +427,17 @@ with tab1:
             with st.spinner(f"Vasuki Ai Brain Scanning {platform} data... 🧠"):
                 if scan_mode == "Auto - X API/Nitter se data lao" and platform == "Twitter / X":
                     x_data = fetch_x_data(clean_username)
-                    if x_data:
-                        bio = x_data.get('bio', '')
-                        is_verified = x_data.get('is_verified', False)
-                        tweet_count = int(x_data.get('tweet_count', 0)) if str(x_data.get('tweet_count', 0)).isdigit() else 0
-                        account_age_days = x_data.get('account_age', 0)
-                   account_age_days = x_data.get('account_age', 0)
+                   if x_data:
+                    bio = x_data.get('bio', '')
+                    is_verified = x_data.get('is_verified', False)
+                    tweet_count = int(x_data.get('tweet_count', 0)) if str(x_data.get('tweet_count', 0)).isdigit() else 0
+                    account_age_days = x_data.get('account_age', 0)
                     tweet_times_list = x_data.get('tweet_timestamps', [])
                     tweet_text_list = x_data.get('tweet_texts', [])
-                   account_age_days = x_data.get('account_age', 0)
-                    # TEMP TEST DATA - Baad me hata dena
-                    tweet_times_list = ["2026-01-01 10:00:00", "2026-01-01 10:05:00", "2026-01-01 14:00:00"]
-                    tweet_text_list = ["Hello", "Hello", "World"]
-                    tpd = 50
-                    last_tweet_time = "2026-01-01 14:00:00"
-                    total_posts = 100
-                    flag_text = "Test"
+                    tpd = x_data.get('tweets_per_day', 0)
+                    last_tweet_time = x_data.get('last_tweet_time', 'N/A')
+                    total_posts = tweet_count
+                    flag_text = x_data.get('flags', 'None')
 
                     run_all_analysis(
                         username=clean_username,
