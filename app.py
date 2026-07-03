@@ -752,17 +752,65 @@ with tab2:
                 st.error("History save failed")
         else:
             st.success(f"✅ Match! Both countries same: {claimed}")
-            st.balloons()
+    st.balloons()
 
 st.sidebar.header("📜 Live Scan History")
 try:
     scans = supabase.table("scans").select("*").order("created_at", desc=True).limit(10).execute()
     if scans.data:
-      for scan in scans.data:
-    score = scan.get('score', 0)
-    is_bot = score >= 50
-    verdict_icon = "🤖 Bot" if is_bot else "✅ Human"
-    username_raw = scan.get('username', '')
+        for scan in scans.data:
+            score = scan.get('score', 0)
+            is_bot = score >= 50
+            verdict_icon = "🤖 Bot" if is_bot else "✅ Human"
+            username_raw = scan.get('username', '')
+            username_display = str(username_raw).replace('[Twitter / X] ', '').replace('[CountryCheck] ', '').replace('[Facebook] ', '').replace('[Instagram] ', '').replace('[YouTube] ', '').replace('[LinkedIn] ', '').replace('[WhatsApp] ', '').replace('[Other Platforms] ', '') if username_raw else 'Unknown'
+            tpd = scan.get('tpd', 0) or 0
+            account_age = scan.get('account_age', 0) or 0
+            tweet_time = scan.get('tweet_time', 'N/A') or 'N/A'
+            total_posts = scan.get('tweet_count', 0) or 0
+            flags = scan.get('flags', 'None') or 'None'
+            verified_text = "✅ Verified" if scan.get('is_verified', False) else "❌ Unverified"
+            created_at = scan.get('created_at', '')
+            time_display = created_at[:16].replace('T', ' ') if created_at else 'N/A'
+
+            st.sidebar.markdown(f"""
+            <div style="
+                background: #0f172a;
+                border: 1px solid #1e293b;
+                border-radius: 12px;
+                padding: 12px;
+                margin-bottom: 8px;
+            ">
+                <div style="font-size: 14px; font-weight: 600; color: #e2e8f0; margin-bottom: 6px;">
+                    {verdict_icon} {username_display}
+                </div>
+                <div style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
+                    <b>Score:</b> {score}/100<br>
+                    <b>TPD:</b> {tpd} | <b>Age:</b> {account_age}d<br>
+                    <b>Posts:</b> {total_posts} | <b>Flags:</b> {flags}<br>
+                    <b>Verified:</b> {verified_text}<br>
+                    <b>Last Scan:</b> {time_display}
+                </div>
+                <a href="https://twitter.com/intent/tweet?text=Bot%20Scan%3A%20{username_display}%20is%20{verdict_icon}%20with%20score%20{score}%2F100&url=" target="_blank" style="text-decoration: none;">
+                    <button style="
+                        width: 100%;
+                        margin-top: 10px;
+                        background: #1d9bf0;
+                        color: white;
+                        border: none;
+                        padding: 8px 12px;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        font-size: 13px;
+                        cursor: pointer;
+                    ">
+                        🔗 Share on X
+                    </button>
+                </a>
+            </div>
+            """, unsafe_allow_html=True)
+except Exception as e:
+    st.sidebar.error(f"History load failed: {e}")
     username_display = str(username_raw).replace('[Twitter / X] ', '').replace('[CountryCheck] ', '').replace('[Facebook] ', '').replace('[Instagram] ', '').replace('[YouTube] ', '').replace('[LinkedIn] ', '').replace('[WhatsApp] ', '').replace('[Other Platforms] ', '') if username_raw else 'Unknown'
     tpd = scan.get('tpd', 0) or 0
     account_age = scan.get('account_age', 0) or 0
