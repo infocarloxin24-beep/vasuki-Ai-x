@@ -437,9 +437,9 @@ with tab1:
                         account_age_days = x_data.get('account_age', 0)
                        st.success("✅ Data fetched from X API/Nitter")
                 tweet_times_list = x_data.get('tweet_times', [])
-                tweet_text_list = x_data.get('tweet_texts', [])
+            
 
-                st.write("DEBUG - Times mile:", len(tweet_times_list))
+    
                 st.write("DEBUG - Texts mile:", len(tweet_text_list))
 
                 if account_age_days > 0:
