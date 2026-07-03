@@ -435,23 +435,23 @@ with tab1:
                         is_verified = x_data.get('is_verified', False)
                         tweet_count = int(x_data.get('tweet_count', 0)) if str(x_data.get('tweet_count', 0)).isdigit() else 0
                         account_age_days = x_data.get('account_age', 0)
-                        st.success("✅ Data fetched from X API/Nitter") 
-                        tweet_times_list = x_data.get('tweet_times', [])
-                    tweet_text_list = x_data.get('tweet_texts', [])
-                    
-st.write("DEBUG - Times mile:", len(tweet_times_list))  # 👈 Ye add kar
+                       st.success("✅ Data fetched from X API/Nitter")
+                tweet_times_list = x_data.get('tweet_times', [])
+                tweet_text_list = x_data.get('tweet_texts', [])
 
-                    if account_age_days > 0:
-                        tpd = tweet_count / account_age_days
-                    else:
-                        tpd = 0
-                    
-                    if tweet_times_list:
-                        run_all_analysis(clean_username, tweet_times_list, tweet_text_list, tpd)
-                        st.rerun()
-                    else:
-                        st.warning("⚠️ Data not found. Use Manual mode.")
+                st.write("DEBUG - Times mile:", len(tweet_times_list))
+                st.write("DEBUG - Texts mile:", len(tweet_text_list))
 
+                if account_age_days > 0:
+                    tpd = tweet_count / account_age_days
+                else:
+                    tpd = 0
+
+                if tweet_times_list:
+                    run_all_analysis(clean_username, tweet_times_list, tweet_text_list, tpd)
+                    st.rerun()
+                else:
+                    st.warning("⚠️ Data not found. Use Manual mode.")
                 # ===== VASUKI BRAIN - COMMENT COMPARISON - FIXED =====
                 fuzzy = 0
                 force_bot = False
