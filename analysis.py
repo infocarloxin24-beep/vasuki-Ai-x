@@ -50,7 +50,7 @@ def check_duplicate_content(tweets):
     with st.expander("Top Repeated Tweets"):
         for text, count in tweet_counts.most_common(3):
             if count > 1:
-                st.write(f"*{count}x:* {text[:80]}...")
+                st.write(f"**{count}x:** {text[:80]}...")
 
     return duplicate_percent
 
@@ -112,8 +112,8 @@ def save_to_history(username, tpd, bot_score, night_pct, dup_pct, cv, age=None, 
     st.session_state.scan_history = st.session_state.scan_history[:10]
 
 def show_sidebar_share():
+    # 👇 Ye 1 baar hi chalega - double title nahi aayega
     st.sidebar.markdown("### 📜 Live Scan History")
-    st.sidebar.markdown("<br>", unsafe_allow_html=True)
 
     if not st.session_state.scan_history:
         st.sidebar.info("No scans yet")
@@ -121,13 +121,12 @@ def show_sidebar_share():
 
     for scan in st.session_state.scan_history:
         with st.sidebar.container():
-            # Share text for WhatsApp
             verified_text = '✅ Verified' if scan.get('verified') else '❌ Unverified'
             flags = scan.get('flags', 'None')
             if isinstance(flags, list):
                 flags = '\n• ' + '\n• '.join(flags)
 
-            share_text = f"""Bot Audit: @{scan['username']}
+            share_text = f"""*Bot Audit: @{scan['username']}*
 Bot Risk: {scan.get('bot_score', 0):.0f}%
 Tweets/Day: {scan.get('tpd', 0)}
 Account Age: {scan.get('age', 'N/A')} days
@@ -140,7 +139,7 @@ Scanned: https://humbotix.streamlit.app"""
             encoded = urllib.parse.quote(share_text)
             wa_url = f"https://wa.me/?text={encoded}"
 
-            # 👇 POORA CARD + SHARE ICON - TERE SCREENSHOT JAISA
+            # 👇 Card + Share icon right corner me
             st.sidebar.markdown(f"""
             <div style="background:#1E1E1E;padding:12px;border-radius:8px;margin-bottom:12px;position:relative;border:1px solid #2D2D2D;">
                 <a href="{wa_url}" target="_blank" title="Share on WhatsApp" style="position:absolute;top:10px;right:10px;">
@@ -167,7 +166,6 @@ Scanned: https://humbotix.streamlit.app"""
 # ================== MASTER FUNCTION ==================
 def run_all_analysis(username, tweet_times_list, tweet_text_list, tpd, age=None, last_tweet=None, total_posts=None, verified=None, flags=None):
     init_sidebar_history()
-    show_sidebar_share() # Sidebar render hoga
 
     night_pct = show_time_heatmap(tweet_times_list)
     dup_pct = check_duplicate_content(tweet_text_list)
@@ -179,4 +177,5 @@ def run_all_analysis(username, tweet_times_list, tweet_text_list, tpd, age=None,
     st.metric("Overall Bot Risk Score", f"{bot_score:.0f}%")
 
     save_to_history(username, tpd, bot_score, night_pct, dup_pct, cv, age, last_tweet, total_posts, verified, flags)
+    show_sidebar_share() # 👈 Sidebar last me render karo
     return bot_score
