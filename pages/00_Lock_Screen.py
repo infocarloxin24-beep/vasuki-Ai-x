@@ -20,12 +20,12 @@ if 'num1' not in st.session_state:
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@800;900&display=swap');
 
-html, body, [class*="css"] {background: #0B0B0B;}
+html, body {background: #0A0A0A;}
 [data-testid="stSidebar"] {display: none;}
-.block-container {padding: 30px 16px; max-width: 400px; margin: auto; font-family: 'Inter', sans-serif;}
+.block-container {padding: 30px 20px; max-width: 420px; margin: auto;}
 
 @keyframes gradientMove {
  0% {background-position: 0% 50%;}
@@ -33,10 +33,10 @@ html, body, [class*="css"] {background: #0B0B0B;}
  100% {background-position: 0% 50%;}
 }
 
-.brand {text-align: center; margin-bottom: 24px;}
+.brand {text-align: center; margin-bottom: 25px;}
 .brand-logo {
-    font-size: 40px; margin-bottom: 8px;
-    background: linear-gradient(90deg, #00FF88, #00AAFF, #00FF88);
+    font-size: 42px; margin-bottom: 6px;
+    background: linear-gradient(90deg, #00FF88, #00AAFF);
     background-size: 200% 200%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -44,50 +44,47 @@ html, body, [class*="css"] {background: #0B0B0B;}
 }
 .brand-title {
     font-family: 'Orbitron', sans-serif;
-    font-size: 22px; font-weight: 900;
-    background: linear-gradient(90deg, #00FF88, #00AAFF, #FFFFFF, #00FF88);
+    font-size: 24px; font-weight: 900;
+    background: linear-gradient(90deg, #00FF88, #00AAFF, #FFFFFF);
     background-size: 300% 300%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     animation: gradientMove 4s ease infinite;
 }
-.brand-sub {font-size: 12px; color: #8A8F98;}
+.brand-sub {font-size: 12px; color: #999; margin-top: 4px;}
 
-.card {background: #131314; border: 1px solid #222; border-radius: 10px; padding: 20px;}
-.section-title {font-size: 11px; font-weight: 600; color: #8A8F98; margin: 14px 0 8px 0; text-transform: uppercase;}
+.card {background: #121212; border: 1px solid #1E1E1E; border-radius: 12px; padding: 22px;}
+.section-title {font-size: 11px; font-weight: 600; color: #888; margin: 14px 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px;}
 
 .stTextInput>div>div>input {
-    background: #1A1B1E; color: #E6E6E6; border: 1px solid #2A2B2E; 
-    border-radius: 8px; height: 38px; font-size: 13px; padding: 0 12px;
+    background: #1A1A1A; color: #FFF; border: 1px solid #2A2A2A; 
+    border-radius: 8px; height: 40px; font-size: 14px; padding: 0 14px; width: 100%;
 }
 
-.social-row {display: flex; gap: 8px; margin-bottom: 16px;}
-.social-btn {
-    flex: 1; height: 38px; font-size: 13px; font-weight: 600; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-    cursor: pointer; border: 1px solid;
+/* GOOGLE GITHUB TOP */
+.social-row {display: flex; gap: 10px; margin-bottom: 18px;}
+.social-btn button {
+    width: 100% !important; height: 40px !important; font-size: 14px !important; font-weight: 600 !important; 
+    border-radius: 8px !important; border: 1px solid !important;
 }
-.social-btn img {width: 16px; height: 16px;}
-.google-btn {background: #FFFFFF; color: #000; border-color: #E0E0E0;}
-.github-btn {background: #1A1B1E; color: #FFFFFF; border-color: #2A2B2E;}
-.github-btn img {filter: brightness(0) invert(1);}
+.google-btn button {background: #FFF !important; color: #000 !important; border-color: #DDD !important;}
+.github-btn button {background: #1A1A1A !important; color: #FFF !important; border-color: #2A2A2A !important;}
 
+/* PUZZLE + REFRESH */
 .puzzle-row {display: flex; gap: 8px; align-items: center;}
 .puzzle-row > div {flex: 1;}
 .refresh-btn button {
-    height: 38px !important; width: 38px !important; padding: 0 !important;
-    background: #1A1B1E !important; border: 1px solid #2A2B2E !important;
-    font-size: 16px !important; border-radius: 8px !important; color: #00FF88 !important;
+    height: 40px !important; width: 40px !important; padding: 0 !important;
+    background: #1A1A1A !important; border: 1px solid #2A2A2A !important;
+    font-size: 18px !important; border-radius: 8px !important; color: #00FF88 !important;
 }
 
+/* SIGN IN BUTTON */
 .primary-btn button {
     background: linear-gradient(90deg, #00FF88, #00AAFF) !important; color: #000 !important; border: none !important;
-    height: 38px !important; font-size: 14px !important; font-weight: 700 !important; border-radius: 8px !important;
-    margin-top: 12px !important; width: 100%;
+    height: 40px !important; font-size: 15px !important; font-weight: 700 !important; border-radius: 8px !important;
+    margin-top: 14px !important; width: 100%;
 }
-
-/* HIDDEN BUTTONS KO COMPLETE HIDE */
-div[data-testid="stButton"] {display: none;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -106,24 +103,39 @@ if not st.session_state.logged_in:
 
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     
-    st.markdown("<div class='section-title'>Continue with</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-title'>CONTINUE WITH</div>", unsafe_allow_html=True)
     
+    # GOOGLE + GITHUB TOP ME
     st.markdown("<div class='social-row'>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("Google", key="google_real"): 
-            result = oauth2.authorize_button("Login", REDIRECT_URI, scope="openid email profile")
+        st.markdown('<div class="google-btn">', unsafe_allow_html=True)
+        result = oauth2.authorize_button("G Google", REDIRECT_URI, scope="openid email profile")
+        st.markdown('</div>', unsafe_allow_html=True)
     with col2:
-        st.button("GitHub", key="github_real", disabled=True) # ABHI KE LIYE DISABLE
+        st.markdown('<div class="github-btn">', unsafe_allow_html=True)
+        st.button("G GitHub", key="github_btn", disabled=True)
+        st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
     
-    st.markdown("<div class='section-title'>Or with Email</div>", unsafe_allow_html=True)
+    if result and 'token' in result:
+        st.session_state.logged_in = True
+        st.session_state.user = result.get('userinfo', {'email': 'google_user@gmail.com'})
+        st.switch_page("pages/dashboard.py")
     
-    email = st.text_input("", value="demo@humbotix.ai", placeholder="you@company.com", key="email", label_visibility="collapsed")
+    st.markdown("<div class='section-title'>OR WITH EMAIL</div>", unsafe_allow_html=True)
+    
+    email = st.text_input("", value="demo@humbotix.ai", placeholder="Email", key="email", label_visibility="collapsed")
     password = st.text_input("", value="Demo@123", type="password", placeholder="Password", key="pass", label_visibility="collapsed")
     
-    st.markdown("<div class='section-title'>Security Check</div>", unsafe_allow_html=True)
+    # SIGN IN BUTTON EMAIL KE NICHE
+    st.markdown("<div class='primary-btn'>", unsafe_allow_html=True)
+    st.button("Sign In", key="dummy_signin_btn")
+    st.markdown("</div>", unsafe_allow_html=True)
     
+    st.markdown("<div class='section-title'>SECURITY CHECK</div>", unsafe_allow_html=True)
+    
+    # PUZZLE + REFRESH SIDE BY SIDE
     st.markdown("<div class='puzzle-row'>", unsafe_allow_html=True)
     col_p, col_r = st.columns([5, 1])
     with col_p:
