@@ -10,11 +10,14 @@ CLIENT_SECRET = "PASTE_YOUR_GOOGLE_CLIENT_SECRET"
 REDIRECT_URI = "https://humbotix.streamlit.app"
 oauth2 = OAuth2Component(CLIENT_ID, CLIENT_SECRET, "https://accounts.google.com/o/oauth2/auth", "https://accounts.google.com/o/oauth2/token", "https://accounts.google.com/o/oauth2/revoke")
 
-# RANDOM PUZZLE HAR BAAR
-if 'num1' not in st.session_state:
+# RANDOM PUZZLE + REFRESH FUNCTION
+def new_puzzle():
     st.session_state.num1 = random.randint(1, 20)
     st.session_state.num2 = random.randint(1, 20)
     st.session_state.answer = st.session_state.num1 + st.session_state.num2
+
+if 'num1' not in st.session_state:
+    new_puzzle()
 
 st.markdown("""
 <style>
@@ -36,13 +39,13 @@ body {background: #0B0B0B;}
 
 .stTextInput>div>div>input {
     background: #1A1B1E; color: #E6E6E6; border: 1px solid #2A2B2E; 
-    border-radius: 8px; height: 36px; font-size: 13px; padding: 0 12px;
+    border-radius: 8px; height: 38px; font-size: 13px; padding: 0 12px;
 }
 
-/* SOCIAL BUTTON SIDE BY SIDE - BORDER HATA DIYA */
+/* SOCIAL BUTTON SIDE BY SIDE */
 .social-row {display: flex; gap: 8px; margin-bottom: 16px;}
 .social-btn {
-    flex: 1; height: 36px; font-size: 12px; font-weight: 600; border-radius: 8px;
+    flex: 1; height: 38px; font-size: 13px; font-weight: 600; border-radius: 8px;
     display: flex; align-items: center; justify-content: center; gap: 6px;
     cursor: pointer; border: 1px solid;
 }
@@ -51,10 +54,19 @@ body {background: #0B0B0B;}
 .google-btn img {filter: none;}
 .github-btn {background: #1A1B1E; color: #FFFFFF; border-color: #2A2B2E;}
 
+/* PUZZLE + REFRESH BUTTON ROW */
+.puzzle-row {display: flex; gap: 8px; align-items: center;}
+.puzzle-row > div {flex: 1;}
+.refresh-btn button {
+    height: 38px !important; width: 38px !important; padding: 0 !important; margin-top: 0 !important;
+    background: #1A1B1E !important; border: 1px solid #2A2B2E !important;
+    font-size: 16px !important; border-radius: 8px !important;
+}
+
 .primary-btn button {
     background: #00FF88 !important; color: #000 !important; border: none !important;
-    height: 36px !important; font-size: 13px !important; font-weight: 600 !important; border-radius: 8px !important;
-    margin-top: 8px !important;
+    height: 38px !important; font-size: 14px !important; font-weight: 700 !important; border-radius: 8px !important;
+    margin-top: 12px !important; width: 100%;
 }
 
 /* KHALI BOX HATAO */
@@ -82,19 +94,16 @@ if not st.session_state.logged_in:
     # GOOGLE + GITHUB SIDE BY SIDE
     st.markdown("<div class='social-row'>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
-    
     with col1:
         st.markdown('<div class="social-btn google-btn" onclick="document.getElementById(\'google-oauth\').click()"><img src="https://www.google.com/favicon.ico">Google</div>', unsafe_allow_html=True)
-    
     with col2:
         st.markdown('<div class="social-btn github-btn" onclick="document.querySelector(\'button[kind=secondary]\').click()"><img src="https://github.githubassets.com/favicon.ico">GitHub</div>', unsafe_allow_html=True)
-    
     st.markdown("</div>", unsafe_allow_html=True)
     
     # HIDDEN OAUTH BUTTONS
     result = oauth2.authorize_button("", REDIRECT_URI, scope="openid email profile")
     st.markdown('<div id="google-oauth"></div>', unsafe_allow_html=True)
-    if st.button("", key="github"): pass
+    st.button("", key="github", label_visibility="collapsed")
     
     if result and 'token' in result:
         st.session_state.logged_in = True
@@ -103,15 +112,28 @@ if not st.session_state.logged_in:
     
     st.markdown("<div class='section-title'>Or with Email</div>", unsafe_allow_html=True)
     
-    # DEMO CREDENTIALS DIYE
+    # DEMO CREDENTIALS
     email = st.text_input("", value="demo@humbotix.ai", placeholder="you@company.com", key="email", label_visibility="collapsed")
     password = st.text_input("", value="Demo@123", type="password", placeholder="Password", key="pass", label_visibility="collapsed")
     
     st.markdown("<div class='section-title'>Security Check</div>", unsafe_allow_html=True)
-    puzzle = st.text_input("", placeholder=f"{st.session_state.num1} + {st.session_state.num2} = ?", key="puzzle", label_visibility="collapsed")
     
+    # PUZZLE + REFRESH BUTTON SIDE BY SIDE
+    st.markdown("<div class='puzzle-row'>", unsafe_allow_html=True)
+    col_p, col_r = st.columns([5, 1])
+    with col_p:
+        puzzle = st.text_input("", placeholder=f"{st.session_state.num1} + {st.session_state.num2} = ?", key="puzzle", label_visibility="collapsed")
+    with col_r:
+        st.markdown("<div class='refresh-btn'>", unsafe_allow_html=True)
+        if st.button("🔄", key="refresh"):
+            new_puzzle()
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # SIGN IN BUTTON
     st.markdown("<div class='primary-btn'>", unsafe_allow_html=True)
-    if st.button("Sign In", key="unlock"):  # YE BUTTON AB DIKHEGA
+    if st.button("Sign In", key="unlock"):
         if str(puzzle) == str(st.session_state.answer) and email and password:
             st.session_state.logged_in = True
             st.session_state.user = {'email': email}
@@ -120,10 +142,7 @@ if not st.session_state.logged_in:
             st.switch_page("pages/dashboard.py")
         else: 
             st.error("Invalid credentials or wrong answer")
-            # GALAT HONE PAR PUZZLE CHANGE
-            st.session_state.num1 = random.randint(1, 20)
-            st.session_state.num2 = random.randint(1, 20)
-            st.session_state.answer = st.session_state.num1 + st.session_state.num2
+            new_puzzle()
             st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
     
