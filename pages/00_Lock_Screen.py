@@ -16,69 +16,42 @@ st.markdown("""
 body {background: #0B0B0B;}
 .stApp {background: #0B0B0B;}
 [data-testid="stSidebar"] {display: none;}
-.block-container {padding: 40px 16px; max-width: 380px; margin: auto; font-family: 'Inter', sans-serif;}
+.block-container {padding: 30px 16px; max-width: 400px; margin: auto; font-family: 'Inter', sans-serif;}
 
-.brand {text-align: center; margin-bottom: 32px;}
-.brand-logo {font-size: 32px; margin-bottom: 8px;}
+.brand {text-align: center; margin-bottom: 24px;}
+.brand-logo {font-size: 36px; filter: brightness(0) invert(1); margin-bottom: 8px;} /* LOGO WHITE KIYA */
 .brand-title {font-size: 20px; font-weight: 700; color: #FFFFFF;}
-.brand-sub {font-size: 13px; color: #8A8F98; margin-top: 4px;}
+.brand-sub {font-size: 12px; color: #8A8F98;}
 
-.card {background: #131314; border: 1px solid #222; border-radius: 12px; padding: 24px;}
+.card {background: #131314; border: 1px solid #222; border-radius: 10px; padding: 20px;}
 
-.section-title {font-size: 12px; font-weight: 600; color: #8A8F98; margin: 16px 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px;}
+.section-title {font-size: 11px; font-weight: 600; color: #8A8F98; margin: 14px 0 8px 0; text-transform: uppercase;}
 
 .stTextInput>div>div>input {
-    background: #1A1B1E; 
-    color: #E6E6E6; 
-    border: 1px solid #2A2B2E; 
-    border-radius: 8px; 
-    height: 38px; 
-    font-size: 14px; 
-    padding: 0 12px;
+    background: #1A1B1E; color: #E6E6E6; border: 1px solid #2A2B2E; 
+    border-radius: 8px; height: 36px; font-size: 13px; padding: 0 12px;
 }
-.stTextInput>div>div>input:focus {border: 1px solid #00FF88 !important;}
 
-/* SAB BUTTON SAME */
+/* SOCIAL BUTTON SIDE BY SIDE */
+.social-row {display: flex; gap: 8px; margin-bottom: 8px;}
 .social-btn {
-    height: 38px; 
-    font-size: 14px; 
-    font-weight: 600; 
-    border-radius: 8px; 
-    margin: 8px 0; 
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    cursor: pointer;
-    transition: 0.2s;
-    border: 1px solid;
+    flex: 1; height: 36px; font-size: 12px; font-weight: 600; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    cursor: pointer; border: 1px solid;
 }
-.social-btn img {width: 16px; height: 16px;}
-
-.google-btn {
-    background: #FFFFFF; 
-    color: #000; 
-    border-color: #E0E0E0;
-}
-.google-btn:hover {background: #F5F5F5;}
-
-.github-btn {
-    background: #1A1B1E; 
-    color: #FFFFFF; 
-    border-color: #2A2B2E;
-}
-.github-btn:hover {background: #222;}
+.social-btn img {width: 14px; height: 14px; filter: brightness(0) invert(1);} /* GITHUB LOGO WHITE */
+.google-btn {background: #FFFFFF; color: #000; border-color: #E0E0E0;}
+.google-btn img {filter: none;} /* GOOGLE KA COLOR REHNE DO */
+.github-btn {background: #1A1B1E; color: #FFFFFF; border-color: #2A2B2E;}
 
 .primary-btn button {
-    background: #00FF88 !important; 
-    color: #000 !important;
-    border: none !important;
-    height: 38px !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    border-radius: 8px !important;
+    background: #00FF88 !important; color: #000 !important; border: none !important;
+    height: 36px !important; font-size: 13px !important; font-weight: 600 !important; border-radius: 8px !important;
 }
+
+/* HIDDEN BOX HATAO */
+iframe {display: none !important;}
+div[data-testid="stButton"] > button[kind="secondary"] {display: none;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -99,31 +72,27 @@ if not st.session_state.logged_in:
     
     st.markdown("<div class='section-title'>Continue with</div>", unsafe_allow_html=True)
     
-    # GOOGLE BUTTON WITH LOGO
-    st.markdown("""
-    <div class="social-btn google-btn" onclick="document.getElementById('google-oauth').click()">
-        <img src="https://www.google.com/favicon.ico">
-        Continue with Google
-    </div>
-    """, unsafe_allow_html=True)
+    # GOOGLE + GITHUB SIDE BY SIDE
+    st.markdown("<div class='social-row'>", unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
     
+    with col1:
+        st.markdown('<div class="social-btn google-btn" onclick="document.getElementById(\'google-oauth\').click()"><img src="https://www.google.com/favicon.ico">Google</div>', unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown('<div class="social-btn github-btn" onclick="document.querySelector(\'button[kind=secondary]\').click()"><img src="https://github.githubassets.com/favicon.ico">GitHub</div>', unsafe_allow_html=True)
+    
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # HIDDEN OAUTH BUTTONS
     result = oauth2.authorize_button("", REDIRECT_URI, scope="openid email profile")
-    st.markdown('<div id="google-oauth" style="display:none"></div>', unsafe_allow_html=True)
+    st.markdown('<div id="google-oauth"></div>', unsafe_allow_html=True)
+    if st.button("", key="github"): pass
+    
     if result and 'token' in result:
         st.session_state.logged_in = True
         st.session_state.user = result.get('userinfo', {'email': 'google_user@gmail.com'})
         st.switch_page("pages/dashboard.py")
-    
-    # GITHUB BUTTON WITH LOGO
-    if st.button("GitHub Placeholder", key="github_dummy"):
-        st.info("GitHub OAuth setup karna hai")
-    st.markdown("""
-    <div class="social-btn github-btn" onclick="document.querySelector('button[kind=secondary]').click()">
-        <img src="https://github.githubassets.com/favicon.ico">
-        Continue with GitHub
-    </div>
-    """, unsafe_allow_html=True)
-    st.markdown('<style>button[kind="secondary"]{display:none}</style>', unsafe_allow_html=True)
     
     st.markdown("<div class='section-title'>Or with Email</div>", unsafe_allow_html=True)
     
@@ -134,7 +103,7 @@ if not st.session_state.logged_in:
     puzzle = st.text_input("", placeholder="15 - 7 = ?", key="puzzle", label_visibility="collapsed")
     
     st.markdown("<div class='primary-btn'>", unsafe_allow_html=True)
-    if st.button("Sign In", key="unlock"):
+    if st.button("Sign In", key="unlock"):  # LOGIN BUTTON ADD KIYA
         if puzzle == "8" and email and password:
             st.session_state.logged_in = True
             st.session_state.user = {'email': email}
