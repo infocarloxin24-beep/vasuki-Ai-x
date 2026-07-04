@@ -35,49 +35,50 @@ body {background: #0B0B0B;}
     height: 38px; 
     font-size: 14px; 
     padding: 0 12px;
-    transition: 0.2s;
 }
-.stTextInput>div>div>input:focus {border: 1px solid #00FF88 !important; box-shadow: 0 0 0 2px rgba(0,255,136,0.1);}
+.stTextInput>div>div>input:focus {border: 1px solid #00FF88 !important;}
 
-/* BUTTON SAB SAME */
-div[data-testid="stButton"] > button {
-    height: 38px !important; 
-    font-size: 14px !important; 
-    font-weight: 600 !important; 
-    border-radius: 8px !important; 
-    margin: 8px 0 !important; 
+/* SAB BUTTON SAME */
+.social-btn {
+    height: 38px; 
+    font-size: 14px; 
+    font-weight: 600; 
+    border-radius: 8px; 
+    margin: 8px 0; 
     width: 100%;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 8px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
     transition: 0.2s;
+    border: 1px solid;
 }
-div[data-testid="stButton"] > button img {width: 16px; height: 16px;}
+.social-btn img {width: 16px; height: 16px;}
 
-/* GOOGLE */
-div[data-testid="stButton"] > button[kind="primary"] {
-    background: #FFFFFF !important; 
-    color: #000 !important; 
-    border: 1px solid #E0E0E0 !important;
+.google-btn {
+    background: #FFFFFF; 
+    color: #000; 
+    border-color: #E0E0E0;
 }
-div[data-testid="stButton"] > button[kind="primary"]:hover {background: #F5F5F5 !important;}
+.google-btn:hover {background: #F5F5F5;}
 
-/* GITHUB */
-div[data-testid="stButton"] > button[kind="secondary"] {
-    background: #1A1B1E !important; 
-    color: #FFFFFF !important; 
-    border: 1px solid #2A2B2E !important;
+.github-btn {
+    background: #1A1B1E; 
+    color: #FFFFFF; 
+    border-color: #2A2B2E;
 }
-div[data-testid="stButton"] > button[kind="secondary"]:hover {background: #222 !important;}
+.github-btn:hover {background: #222;}
 
-/* PRIMARY ACTION */
 .primary-btn button {
     background: #00FF88 !important; 
     color: #000 !important;
     border: none !important;
+    height: 38px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
 }
-.primary-btn button:hover {opacity: 0.9 !important;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -86,7 +87,6 @@ if "logged_in" not in st.session_state:
 
 if not st.session_state.logged_in:
     
-    # BRAND HEADER
     st.markdown("""
     <div class="brand">
         <div class="brand-logo">🛡️</div>
@@ -99,28 +99,31 @@ if not st.session_state.logged_in:
     
     st.markdown("<div class='section-title'>Continue with</div>", unsafe_allow_html=True)
     
-    # GOOGLE BUTTON
-    result = oauth2.authorize_button("Continue with Google", REDIRECT_URI, scope="openid email profile")
+    # GOOGLE BUTTON WITH LOGO
     st.markdown("""
-    <script>
-    let gBtn = document.querySelector('button[kind="primary"]');
-    if(gBtn){gBtn.innerHTML = '<img src="https://www.google.com/favicon.ico">Continue with Google';}
-    </script>
+    <div class="social-btn google-btn" onclick="document.getElementById('google-oauth').click()">
+        <img src="https://www.google.com/favicon.ico">
+        Continue with Google
+    </div>
     """, unsafe_allow_html=True)
+    
+    result = oauth2.authorize_button("", REDIRECT_URI, scope="openid email profile")
+    st.markdown('<div id="google-oauth" style="display:none"></div>', unsafe_allow_html=True)
     if result and 'token' in result:
         st.session_state.logged_in = True
         st.session_state.user = result.get('userinfo', {'email': 'google_user@gmail.com'})
         st.switch_page("pages/dashboard.py")
     
-    # GITHUB BUTTON  
-    if st.button("Continue with GitHub", key="github"):
-        st.info("GitHub OAuth - Admin se connect karein")
+    # GITHUB BUTTON WITH LOGO
+    if st.button("GitHub Placeholder", key="github_dummy"):
+        st.info("GitHub OAuth setup karna hai")
     st.markdown("""
-    <script>
-    let ghBtn = document.querySelector('button[kind="secondary"]');
-    if(ghBtn){ghBtn.innerHTML = '<img src="https://github.githubassets.com/favicon.ico">Continue with GitHub';}
-    </script>
+    <div class="social-btn github-btn" onclick="document.querySelector('button[kind=secondary]').click()">
+        <img src="https://github.githubassets.com/favicon.ico">
+        Continue with GitHub
+    </div>
     """, unsafe_allow_html=True)
+    st.markdown('<style>button[kind="secondary"]{display:none}</style>', unsafe_allow_html=True)
     
     st.markdown("<div class='section-title'>Or with Email</div>", unsafe_allow_html=True)
     
