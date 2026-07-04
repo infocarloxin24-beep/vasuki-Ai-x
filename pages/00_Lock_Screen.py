@@ -58,15 +58,16 @@ html, body {background: #0A0A0A;}
 
 .stTextInput>div>div>input {
     background: #1A1A1A; color: #FFF; border: 1px solid #2A2A2A; 
-    border-radius: 8px; height: 40px; font-size: 14px; padding: 0 14px; width: 100%;
+    border-radius: 8px; height: 40px; font-size: 14px; padding: 0 14px;
 }
 
-/* GOOGLE GITHUB TOP */
+/* GOOGLE GITHUB BUTTON SAME SIZE + ORIGINAL LOGO */
 .social-row {display: flex; gap: 10px; margin-bottom: 18px;}
 .social-btn button {
     width: 100% !important; height: 40px !important; font-size: 14px !important; font-weight: 600 !important; 
-    border-radius: 8px !important; border: 1px solid !important;
+    border-radius: 8px !important; border: 1px solid !important; display: flex !important; align-items: center !important; justify-content: center !important; gap: 8px !important;
 }
+.social-btn img {width: 18px !important; height: 18px !important;}
 .google-btn button {background: #FFF !important; color: #000 !important; border-color: #DDD !important;}
 .github-btn button {background: #1A1A1A !important; color: #FFF !important; border-color: #2A2A2A !important;}
 
@@ -79,11 +80,11 @@ html, body {background: #0A0A0A;}
     font-size: 18px !important; border-radius: 8px !important; color: #00FF88 !important;
 }
 
-/* SIGN IN BUTTON */
+/* SIGN IN BUTTON FULL WIDTH */
 .primary-btn button {
     background: linear-gradient(90deg, #00FF88, #00AAFF) !important; color: #000 !important; border: none !important;
     height: 40px !important; font-size: 15px !important; font-weight: 700 !important; border-radius: 8px !important;
-    margin-top: 14px !important; width: 100%;
+    margin-top: 14px !important; width: 100% !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -105,20 +106,21 @@ if not st.session_state.logged_in:
     
     st.markdown("<div class='section-title'>CONTINUE WITH</div>", unsafe_allow_html=True)
     
-    # GOOGLE + GITHUB TOP ME
+    # GOOGLE + GITHUB SAME SIZE ORIGINAL LOGO
     st.markdown("<div class='social-row'>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown('<div class="google-btn">', unsafe_allow_html=True)
-        result = oauth2.authorize_button("G Google", REDIRECT_URI, scope="openid email profile")
+        st.markdown('<div class="social-btn google-btn">', unsafe_allow_html=True)
+        if st.button('<img src="https://www.google.com/favicon.ico"> Google', key="google_login"):
+            result = oauth2.authorize_button("Login", REDIRECT_URI, scope="openid email profile")
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
-        st.markdown('<div class="github-btn">', unsafe_allow_html=True)
-        st.button("G GitHub", key="github_btn", disabled=True)
+        st.markdown('<div class="social-btn github-btn">', unsafe_allow_html=True)
+        st.button('<img src="https://github.githubassets.com/favicon.ico"> GitHub', key="github_login", disabled=False)
         st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
     
-    if result and 'token' in result:
+    if 'result' in locals() and result and 'token' in result:
         st.session_state.logged_in = True
         st.session_state.user = result.get('userinfo', {'email': 'google_user@gmail.com'})
         st.switch_page("pages/dashboard.py")
@@ -128,14 +130,9 @@ if not st.session_state.logged_in:
     email = st.text_input("", value="demo@humbotix.ai", placeholder="Email", key="email", label_visibility="collapsed")
     password = st.text_input("", value="Demo@123", type="password", placeholder="Password", key="pass", label_visibility="collapsed")
     
-    # SIGN IN BUTTON EMAIL KE NICHE
-    st.markdown("<div class='primary-btn'>", unsafe_allow_html=True)
-    st.button("Sign In", key="dummy_signin_btn")
-    st.markdown("</div>", unsafe_allow_html=True)
-    
     st.markdown("<div class='section-title'>SECURITY CHECK</div>", unsafe_allow_html=True)
     
-    # PUZZLE + REFRESH SIDE BY SIDE
+    # PUZZLE + REFRESH
     st.markdown("<div class='puzzle-row'>", unsafe_allow_html=True)
     col_p, col_r = st.columns([5, 1])
     with col_p:
@@ -148,8 +145,9 @@ if not st.session_state.logged_in:
         st.markdown("</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
     
+    # SIRF 1 SIGN IN BUTTON
     st.markdown("<div class='primary-btn'>", unsafe_allow_html=True)
-    if st.button("Sign In", key="unlock"):
+    if st.button("Sign In", key="unlock_final"):
         if str(puzzle) == str(st.session_state.answer) and email and password:
             st.session_state.logged_in = True
             st.session_state.user = {'email': email}
