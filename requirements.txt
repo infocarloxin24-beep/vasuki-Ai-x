@@ -9,5 +9,3 @@ nltk
 numpy
 scikit-learn
 plotly
-streamlit-oauth
-streamlit-autorefresh
