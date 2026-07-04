@@ -11,56 +11,73 @@ oauth2 = OAuth2Component(CLIENT_ID, CLIENT_SECRET, "https://accounts.google.com/
 
 st.markdown("""
 <style>
-body {background: #0A0A0A;}
-.stApp {background: #0A0A0A;}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body {background: #0B0B0B;}
+.stApp {background: #0B0B0B;}
 [data-testid="stSidebar"] {display: none;}
-.block-container {padding: 1.5rem 1rem; max-width: 320px; margin: auto;}
+.block-container {padding: 40px 16px; max-width: 380px; margin: auto; font-family: 'Inter', sans-serif;}
 
-.header {text-align: center; margin-bottom: 15px;}
-.logo {font-size: 40px;}
-.lock-title {font-size: 20px; font-weight: 800; color: #00FF88; margin: 0;}
-.lock-subtitle {color: #777; font-size: 10px;}
+.brand {text-align: center; margin-bottom: 32px;}
+.brand-logo {font-size: 32px; margin-bottom: 8px;}
+.brand-title {font-size: 20px; font-weight: 700; color: #FFFFFF;}
+.brand-sub {font-size: 13px; color: #8A8F98; margin-top: 4px;}
 
-.login-card {background: #111; border-radius: 8px; padding: 15px;}
+.card {background: #131314; border: 1px solid #222; border-radius: 12px; padding: 24px;}
 
-/* SAB CHOTA */
-.stSubheader {font-size: 11px !important; color: #00AAFF !important; margin: 8px 0 4px 0 !important;}
-.stTextInput>div>div>input {background: #1A1A1A; color: #eee; border: 1px solid #333; border-radius: 5px; height: 30px; font-size: 11px; padding: 0 8px;}
+.section-title {font-size: 12px; font-weight: 600; color: #8A8F98; margin: 16px 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px;}
 
-/* BUTTON SAB 30PX */
+.stTextInput>div>div>input {
+    background: #1A1B1E; 
+    color: #E6E6E6; 
+    border: 1px solid #2A2B2E; 
+    border-radius: 8px; 
+    height: 38px; 
+    font-size: 14px; 
+    padding: 0 12px;
+    transition: 0.2s;
+}
+.stTextInput>div>div>input:focus {border: 1px solid #00FF88 !important; box-shadow: 0 0 0 2px rgba(0,255,136,0.1);}
+
+/* BUTTON SAB SAME */
 div[data-testid="stButton"] > button {
-    height: 30px !important; 
-    font-size: 11px !important; 
+    height: 38px !important; 
+    font-size: 14px !important; 
     font-weight: 600 !important; 
-    border-radius: 5px !important; 
-    margin: 4px 0 !important; 
+    border-radius: 8px !important; 
+    margin: 8px 0 !important; 
     width: 100%;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 6px !important;
+    gap: 8px !important;
+    transition: 0.2s;
 }
-div[data-testid="stButton"] > button img {width: 12px; height: 12px;}
+div[data-testid="stButton"] > button img {width: 16px; height: 16px;}
 
-/* GOOGLE WHITE */
+/* GOOGLE */
 div[data-testid="stButton"] > button[kind="primary"] {
     background: #FFFFFF !important; 
     color: #000 !important; 
-    border: 1px solid #ddd !important;
+    border: 1px solid #E0E0E0 !important;
 }
+div[data-testid="stButton"] > button[kind="primary"]:hover {background: #F5F5F5 !important;}
 
-/* GITHUB BLACK */
+/* GITHUB */
 div[data-testid="stButton"] > button[kind="secondary"] {
-    background: #000 !important; 
+    background: #1A1B1E !important; 
     color: #FFFFFF !important; 
-    border: 1px solid #444 !important;
+    border: 1px solid #2A2B2E !important;
 }
+div[data-testid="stButton"] > button[kind="secondary"]:hover {background: #222 !important;}
 
-/* UNLOCK GREEN */
-.unlock-btn button {
+/* PRIMARY ACTION */
+.primary-btn button {
     background: #00FF88 !important; 
     color: #000 !important;
+    border: none !important;
 }
+.primary-btn button:hover {opacity: 0.9 !important;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -69,34 +86,25 @@ if "logged_in" not in st.session_state:
 
 if not st.session_state.logged_in:
     
+    # BRAND HEADER
     st.markdown("""
-    <div class="header">
-        <div class="logo">🛡️</div>
-        <div class="lock-title">HumbotiX AI</div>
-        <div class="lock-subtitle">Bot Detector</div>
+    <div class="brand">
+        <div class="brand-logo">🛡️</div>
+        <div class="brand-title">HumbotiX AI</div>
+        <div class="brand-sub">Enterprise Bot Protection Platform</div>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("<div class='login-card'>", unsafe_allow_html=True)
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
     
-    st.subheader("1. Puzzle")
-    puzzle = st.text_input("", placeholder="15 - 7 = ?", key="puzzle", label_visibility="collapsed")
+    st.markdown("<div class='section-title'>Continue with</div>", unsafe_allow_html=True)
     
-    st.subheader("2. Login")
-    email = st.text_input("", placeholder="Email", key="email", label_visibility="collapsed")
-    password = st.text_input("", type="password", placeholder="Password", key="pass", label_visibility="collapsed")
-    
-    st.subheader("3. Social")
-    
-    # GOOGLE BUTTON WITH ICON
-    st.markdown('<button id="googleBtn" class="social">Continue with Google</button>', unsafe_allow_html=True)
-    result = oauth2.authorize_button("", REDIRECT_URI, scope="openid email profile")
+    # GOOGLE BUTTON
+    result = oauth2.authorize_button("Continue with Google", REDIRECT_URI, scope="openid email profile")
     st.markdown("""
     <script>
-    let gBtn = parent.document.querySelector('iframe').contentDocument.querySelector('button');
-    if(gBtn){gBtn.id="googleReal"; gBtn.style.display="none";}
-    document.getElementById('googleBtn').onclick = ()=>{document.getElementById('googleReal').click();}
-    document.getElementById('googleBtn').innerHTML = '<img src="https://www.google.com/favicon.ico">Continue with Google';
+    let gBtn = document.querySelector('button[kind="primary"]');
+    if(gBtn){gBtn.innerHTML = '<img src="https://www.google.com/favicon.ico">Continue with Google';}
     </script>
     """, unsafe_allow_html=True)
     if result and 'token' in result:
@@ -104,9 +112,9 @@ if not st.session_state.logged_in:
         st.session_state.user = result.get('userinfo', {'email': 'google_user@gmail.com'})
         st.switch_page("pages/dashboard.py")
     
-    # GITHUB BUTTON WITH ICON
+    # GITHUB BUTTON  
     if st.button("Continue with GitHub", key="github"):
-        st.warning("GitHub setup pending")
+        st.info("GitHub OAuth - Admin se connect karein")
     st.markdown("""
     <script>
     let ghBtn = document.querySelector('button[kind="secondary"]');
@@ -114,14 +122,23 @@ if not st.session_state.logged_in:
     </script>
     """, unsafe_allow_html=True)
     
-    # UNLOCK
-    if st.button("🔓 Unlock", key="unlock"):
+    st.markdown("<div class='section-title'>Or with Email</div>", unsafe_allow_html=True)
+    
+    email = st.text_input("", placeholder="you@company.com", key="email", label_visibility="collapsed")
+    password = st.text_input("", type="password", placeholder="Password", key="pass", label_visibility="collapsed")
+    
+    st.markdown("<div class='section-title'>Security Check</div>", unsafe_allow_html=True)
+    puzzle = st.text_input("", placeholder="15 - 7 = ?", key="puzzle", label_visibility="collapsed")
+    
+    st.markdown("<div class='primary-btn'>", unsafe_allow_html=True)
+    if st.button("Sign In", key="unlock"):
         if puzzle == "8" and email and password:
             st.session_state.logged_in = True
             st.session_state.user = {'email': email}
             st.switch_page("pages/dashboard.py")
         else: 
-            st.error("Galat")
+            st.error("Invalid credentials")
+    st.markdown("</div>", unsafe_allow_html=True)
     
     st.markdown("</div>", unsafe_allow_html=True)
 
