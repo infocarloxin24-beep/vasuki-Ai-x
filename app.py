@@ -1,4 +1,7 @@
-
+import streamlit as st
+st.title("HumbotiX AI - Universal Bot Detector")
+# ... tera purana code
+if st.sidebar.button("Logout"): st.session_state.clear(); st.switch_page("pages/00_Lock_Screen.py")
 import streamlit as st
 from analysis import run_all_analysis, init_sidebar_history, show_sidebar_share
 
