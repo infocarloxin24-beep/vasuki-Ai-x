@@ -1,13 +1,16 @@
 import streamlit as st
-from analysis import run_all_analysis, init_sidebar_history, show_sidebar_share
+from login_gate import show_login_gate
+from dashboard import show_dashboard
 
-init_sidebar_history()
-show_sidebar_share()
-st.set_page_config(
-    page_title="Humbotix - Free Bot Detector",
-    page_icon="assets/logo.png",
-    layout="wide"
-)
+st.set_page_config(page_title="Humbotix AI", layout="centered", page_icon="🔒")
+
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+if st.session_state.logged_in:
+    show_dashboard()
+else:
+    show_login_gate()
 
 # Google ke liye Description daal de
 st.markdown("""
