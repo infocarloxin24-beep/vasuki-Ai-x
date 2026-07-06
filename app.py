@@ -350,7 +350,7 @@ with tab1:
 
     platform = st.selectbox(
         "Select Platform:",
-        ["Twitter / X", "Facebook", "Instagram", "YouTube", "LinkedIn", "WhatsApp", "Other Platforms"]
+        ["Twitter / X", "Facebook", "Instagram", "YouTube", "LinkedIn", "Reddit", "Other Platforms"]
     )
 
     username = st.text_input(f"{platform} Username / Profile Link:", placeholder="@username or paste profile URL")
