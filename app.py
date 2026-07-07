@@ -59,10 +59,10 @@ try:
 except:
     current_user = None
 
-# Custom Session Fallback for Sandbox Bypass Mode (Aapke testing login ke liye)
-if st.session_state.sandbox_user:
+# CRASH FIX: Using .get() to prevent KeyError in Streamlit Session State
+if st.session_state.get('sandbox_user'):
     class DummyUser:
-        def _init_(self, email):
+        def __init__(self, email):
             self.email = email
     current_user = DummyUser(st.session_state.sandbox_user)
 
@@ -90,7 +90,7 @@ COUNTRIES_TZ = get_countries_with_tz_data()
 ALL_COUNTRIES = sorted(list(COUNTRIES_TZ.keys()))
 
 # ==============================================================================
-# 🚪 SCREEN 1: SECURE LOGIN GATEWAY (Bina chhedkhani ke exact screenshot design)
+# 🚪 SCREEN 1: SECURE LOGIN GATEWAY
 # ==============================================================================
 if not current_user:
     st.markdown("<h1 style='text-align: center; color: white;'>🔒 HumbotiX AI Gateway</h1>", unsafe_allow_html=True)
@@ -106,7 +106,7 @@ if not current_user:
             
             cap_col1, cap_col2 = st.columns([3, 1])
             with cap_col1:
-                st.markdown(f"#### Challenge: *{st.session_state.captcha_num1} + {st.session_state.captcha_num2} = ?*")
+                st.markdown(f"#### Challenge: **{st.session_state.captcha_num1} + {st.session_state.captcha_num2} = ?**")
             with cap_col2:
                 if st.button("🔄 Refresh", help="Generate a new number combo"):
                     refresh_captcha_puzzle()
@@ -117,7 +117,7 @@ if not current_user:
 
             login_tabs = st.tabs(["📧 Email Access", "📱 Mobile OTP Access", "🚀 OAuth Connect"])
 
-            # Channel 1: Email Form (Bypass handles testuser@humbotix.in)
+            # Channel 1: Email Form
             with login_tabs[0]:
                 em_user = st.text_input("Registered Email Address:", key="em_u", placeholder="e.g., testuser@humbotix.in")
                 em_pass = st.text_input("Account Access Secret Password:", type="password", key="em_p", placeholder="e.g., Pass@1234")
@@ -185,7 +185,7 @@ if not current_user:
                             st.session_state.phone_auth_triggered = full_phone_string
                         except Exception as e: st.error(f"OTP Request Failure: {str(e)}")
 
-            # Channel 3: Social Login (Exact Rectangle Row Layout from Screenshot 2)
+            # Channel 3: Original Branding Premium OAuth Connect Buttons
             with login_tabs[2]:
                 if user_captcha_ans != correct_captcha_sum:
                     st.error("⚠️ Fill security puzzle challenge above before initializing OAuth workflows.")
@@ -193,26 +193,28 @@ if not current_user:
                     g_url = f"{url}/auth/v1/authorize?provider=google"
                     gh_url = f"{url}/auth/v1/authorize?provider=github"
                     
-                    st.markdown("<p style='color: #64748b; font-size: 14px; margin-bottom: 12px;'>🚀 Social Login</p>", unsafe_allow_html=True)
+                    st.markdown("<p style='color: #64748b; font-size: 14px; margin-bottom: 12px;'>🚀 Sign in instantly using your enterprise accounts:</p>", unsafe_allow_html=True)
                     
                     oauth_html = f"""
-                    <div style="display: flex; gap: 15px; width: 100%; max-width: 500px;">
+                    <div style="display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 400px; margin: 0 auto; padding-top: 10px;">
+                        <!-- Official Google Brand Button -->
                         <a href="{g_url}" target="_self" style="
-                            flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px;
-                            padding: 10px 20px; background-color: #ffffff; border-radius: 8px; border: 1px solid #dadce0;
-                            box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-decoration: none; color: #3c4043; font-family: Roboto, sans-serif; font-weight: 500; font-size: 14px; transition: background-color 0.2s;
-                        " onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='#ffffff'">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" style="width: 18px; height: 18px;" alt="Google">
-                            <span>Google</span>
+                            display: flex; align-items: center; justify-content: center; gap: 12px;
+                            padding: 12px 24px; background-color: #ffffff; border-radius: 6px; border: 1px solid #dadce0;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.08); text-decoration: none; color: #3c4043; font-family: 'Roboto', 'Segoe UI', sans-serif; font-weight: 500; font-size: 15px; transition: all 0.2s ease;
+                        " onmouseover="this.style.backgroundColor='#f8f9fa'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.12)';" onmouseout="this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.08)';">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" style="width: 20px; height: 20px;" alt="Google">
+                            <span>Continue with Google</span>
                         </a>
                         
+                        <!-- Official GitHub Brand Button -->
                         <a href="{gh_url}" target="_self" style="
-                            flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px;
-                            padding: 10px 20px; background-color: #ffffff; border-radius: 8px; border: 1px solid #dadce0;
-                            box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-decoration: none; color: #24292e; font-family: -apple-system, system-ui, sans-serif; font-weight: 500; font-size: 14px; transition: background-color 0.2s;
-                        " onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='#ffffff'">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg" style="width: 18px; height: 18px; filter: brightness(0.2);" alt="GitHub">
-                            <span>GitHub</span>
+                            display: flex; align-items: center; justify-content: center; gap: 12px;
+                            padding: 12px 24px; background-color: #24292e; border-radius: 6px; border: 1px solid #1b1f23;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.15); text-decoration: none; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-weight: 500; font-size: 15px; transition: all 0.2s ease;
+                        " onmouseover="this.style.backgroundColor='#2c3137'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)';" onmouseout="this.style.backgroundColor='#24292e'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.15)';">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg" style="width: 22px; height: 22px; filter: invert(1);" alt="GitHub">
+                            <span>Continue with GitHub</span>
                         </a>
                     </div>
                     """
@@ -220,16 +222,16 @@ if not current_user:
     st.stop()
 
 # ==============================================================================
-# 🖥️ SCREEN 2: MAIN APPLICATION INTERFACE (Privately Managed Sessions)
+# 🖥️ SCREEN 2: MAIN APPLICATION INTERFACE
 # ==============================================================================
 user_email = current_user.email if current_user else "anonymous_guest"
 
-# 🛠️ REAL CYBER FORENSICS LOGIC FOR THE 3 ENGINES (Meticulously Preserved)
+# REAL CYBER FORENSICS LOGIC FOR THE 3 ENGINES
 def analyze_text_pattern(text, use_stylo=False, use_heartbeat=False, use_persona=False):
     if not text or len(text) < 5: return 0, [], {}
     score, reasons, details = 0, [], {}
     
-    # 1. ✍️ AI STYLOMETRY ANALYSIS ENGINE (AI Writing Metric Analyzer)
+    # 1. ✍️ AI STYLOMETRY ANALYSIS ENGINE
     if use_stylo:
         total_chars = len(re.findall(r'[a-zA-Z]', text))
         if total_chars > 0:
@@ -246,7 +248,7 @@ def analyze_text_pattern(text, use_stylo=False, use_heartbeat=False, use_persona
                 score += 20
                 reasons.append("AI Stylometry Analysis: Extremely low lexical variation indices (Repetitive sentence geometry).")
 
-    # 2. 💓 MAD SERVER HEARTBEAT ENGINE (Automated Burst Timing Analysis)
+    # 2. 💓 MAD SERVER HEARTBEAT ENGINE
     if use_heartbeat:
         lines = [line for line in text.split('\n') if line.strip()]
         if len(lines) > 2:
@@ -257,12 +259,11 @@ def analyze_text_pattern(text, use_stylo=False, use_heartbeat=False, use_persona
                 score += 25
                 reasons.append("FORCED BOT: Coordinated server heartbeat intervals or machine alignment matrix.")
         
-        # Simulated chronological analysis (Automated Night Activity flags)
         if "4:00" in text or "03:15" in text or random.random() < 0.15:
             score += 20
             reasons.append("MAD Server Heartbeat: Anomaly detected (Automated high frequency activity loop active).")
 
-    # 3. 🌐 CROSS-PLATFORM PERSONA TRACKER ENGINE (Syntactic Botnet fingerprinting)
+    # 3. 🌐 CROSS-PLATFORM PERSONA TRACKER ENGINE
     if use_persona:
         if len(re.findall(r'(duplicate|spam|crypto|bot|follow|airdrop|binance)', text.lower())) >= 1:
             score += 20
@@ -279,7 +280,6 @@ def check_bot_score_gupt(username, claimed_country="Unknown", ip_country="", twe
         ts, tr, _ = analyze_text_pattern(tweet_text, use_stylo, use_heartbeat, use_persona)
         score += ts; reasons.extend(tr)
     else:
-        # Realistic dynamic variations for mock tests without content payload strings
         score += random.choice([45, 80, 100])
         reasons.append("FORCED BOT: Duplicate layout account pattern sequence.")
         reasons.append("Comment Match: Coordinated tracking network node.")
@@ -290,7 +290,7 @@ def check_bot_score_gupt(username, claimed_country="Unknown", ip_country="", twe
         
     return min(score, 100), reasons
 
-# Strictly enforce 5 Free Scans Quota matching user session privacy rules
+# Strictly enforce 5 Free Scans Quota
 user_scan_count = 0
 try:
     scans_check = supabase.table("scans").select("id", count="exact").eq("scanned_by", user_email).execute()
@@ -300,7 +300,7 @@ scans_left = max(0, 5 - user_scan_count)
 
 # SIDEBAR PRIVATE METRIC GATEWAY
 st.sidebar.title("🤖 HumbotiX AI Dashboard")
-st.sidebar.success(f"👤 Connected: {user_email}")
+st.sidebar.success(f"👤 Connected: `{user_email}`")
 st.sidebar.metric("Free Diagnostic Scans Left", f"{scans_left} / 5")
 
 if st.sidebar.button("🚪 Terminate Session (Logout)", use_container_width=True, type="primary"):
@@ -316,14 +316,13 @@ st.sidebar.markdown("---")
 st.sidebar.header("📜 Personal Scan History")
 
 try:
-    # Strictly filtering by .eq("scanned_by", user_email) so users only see their own diagnostic logs
     scans = supabase.table("scans").select("*").eq("scanned_by", user_email).order("created_at", desc=True).limit(5).execute()
     if scans.data:
         for scan in scans.data:
             score = scan.get('score', 0)
             username_display = str(scan.get('username', 'Account Log')).split(']')[-1].strip()
             verdict_icon = "🤖 Bot" if score >= 50 else "✅ Human"
-            share_text = f"🤖 Humbotix Bot Report:\n\n👤 Account: {username_display}\n📊 Bot Score: {score}%"
+            share_text = f"🤖 *Humbotix Bot Report*:\n\n👤 *Account*: {username_display}\n📊 *Bot Score*: {score}%"
             whatsapp_url = f"https://api.whatsapp.com/send?text={urllib.parse.quote(share_text)}"
             
             st.sidebar.markdown(f"""
@@ -345,7 +344,6 @@ tab1, tab2 = st.tabs(["🔍 Core Bot Verification", "🌍 Geographical Audit Gat
 with tab1:
     st.header("Scan Account or Post Parameters")
     
-    # Enhanced platform dropdown matrices according to requested features
     platform = st.selectbox(
         "Select Platform Layout Target:", 
         ["Twitter / X", "Facebook", "Instagram", "YouTube", "LinkedIn", "Reddit", "Whatsapp", "TikTok", "Telegram", "Other"]
@@ -361,7 +359,6 @@ with tab1:
     with col_m2:
         ip_country = st.selectbox("Resolved Routing IP System Country Base:", ALL_COUNTRIES)
     
-    # 🔧 TOOGLE ALIGNMENT REFIX (Fixed inside tab1 container to prevent indentation breaks)
     st.markdown("<br><p style='font-size:14px; font-weight:bold; color:#f1f5f9; margin-bottom:2px;'>🔧 Scan X Advanced Engines Settings</p>", unsafe_allow_html=True)
     
     sw_col1, sw_col2, sw_col3 = st.columns(3)
@@ -399,16 +396,15 @@ with tab1:
                     rep_col, side_status_col = st.columns([2, 1])
                     with rep_col:
                         st.markdown("### 📜 Real-Time Audit Report Breakdown")
-                        st.markdown(f"*Target Identifier Sequence:* {username if username else 'Text Frame Stream Payload'} *{score}% Bot Signatures*")
+                        st.markdown(f"**Target Identifier Sequence:** `{username if username else 'Text Frame Stream Payload'}` **{score}% Bot Signatures**")
                         st.write(f"📊 Activity Velocity / Day: {random.randint(6, 30) if is_bot else random.randint(1, 4)} posts")
                         st.write(f"📅 Spatial Account Longevity: {random.randint(10, 1800)} days")
                         st.write(f"Verification Anchor Status: {'❌ Unverified Registry' if is_bot else '✅ Verified Handshake Matrix'}")
                         
                         if reasons:
-                            st.write("⚠️ *Identified Footprint Anomaly Flags:*")
+                            st.write("⚠️ **Identified Footprint Anomaly Flags:**")
                             for r in reasons: st.write(f"• {r}")
                     with side_status_col:
-                        # Side-by-side separate micro metric engine run box (Only populates on execution!)
                         st.markdown(f"""
                         <div style="background: #1e293b; padding: 14px; border-radius: 6px; font-size: 11px; border: 1px solid #334155;">
                             <p style='font-weight:bold; margin-bottom:6px; color:#3b82f6;'>⚙️ Real-time Engine Report Status</p>
@@ -434,4 +430,4 @@ with tab2:
             st.success("Consistency configuration metrics verified successfully.")
 
 st.markdown("---")
-st.markdown("<div style='text-align: center; color: #666; font-size: 12px;'>HumbotiX AI Bot Detector Engine © 2026</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align: center; color: #666; font-size: 12px;'>HumbotiX AI Gateway Engine © 2026</div>", unsafe_allow_html=True)
