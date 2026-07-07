@@ -348,10 +348,10 @@ tab1, tab2 = st.tabs(["🔍 Bot Check", "🌍 Country Check"])
 with tab1:
     st.subheader("Scan Account or Post")
 
-    platform = st.selectbox(
-        "Select Platform:",
-        ["Twitter / X", "Facebook", "Instagram", "YouTube", "LinkedIn", "Reddit", "Whatsapp", "TikTok", "Telegram", "Other Platforms"]
-    )
+   platform = st.selectbox(
+    "Select Platform:",
+    ["Twitter / X", "Facebook", "Instagram", "YouTube", "LinkedIn", "Reddit", "Whatsapp", "TikTok", "Telegram", "Other"]
+)
 
     username = st.text_input(f"{platform} Username / Profile Link:", placeholder="@username or paste profile URL")
     scan_mode = st.radio("Scan Mode:", ["Auto - X API/Nitter se data lao", "Manual - Khud bharo"])
