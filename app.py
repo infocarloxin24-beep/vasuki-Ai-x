@@ -434,4 +434,4 @@ with tab2:
             st.success("Consistency configuration metrics verified successfully.")
 
 st.markdown("---")
-st.markdown("<div style='text-align: center; color: #666; font-size: 12px;'>HumbotiX AI Gateway Engine © 2026</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align: center; color: #666; font-size: 12px;'>HumbotiX AI Bot Detector Engine © 2026</div>", unsafe_allow_html=True)
