@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as stselect
 from analysis import run_all_analysis, init_sidebar_history, show_sidebar_share
 
 init_sidebar_history()
@@ -350,7 +350,7 @@ with tab1:
 
     platform = st.selectbox(
         "Select Platform:",
-        ["Twitter / X", "Facebook", "Instagram", "YouTube", "LinkedIn", "Reddit", "Other Platforms"]
+        ["Twitter / X", "Facebook", "Instagram", "YouTube", "LinkedIn", "Reddit",  "Whatsapp", "TikTok", "Telegram", "Other Platforms"]
     )
 
     username = st.text_input(f"{platform} Username / Profile Link:", placeholder="@username or paste profile URL")
