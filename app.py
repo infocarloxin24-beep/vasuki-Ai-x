@@ -28,7 +28,7 @@ from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
 
 # SECRETS SE TOKEN LO
-ADMIN_PASS = st.secrets.get("ADMIN_PASS", "admin123")
+ADMIN_PASS = st.secrets.get("ADMIN_PASS", "fgdffdf")
 X_BEARER_TOKEN = st.secrets.get("X_BEARER_TOKEN")
 
 if 'admin' not in st.session_state:
