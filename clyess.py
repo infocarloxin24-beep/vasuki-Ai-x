@@ -12,18 +12,18 @@ st.set_page_config(page_title="ClyxessChat AI", page_icon="⚡", layout="centere
 HIDDEN_GROQ_API_KEY = "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"
 SUPABASE_URL = "https://supabase.co"
 SUPABASE_KEY = "sb_publishable_9kgpcnkITeh-kTXyRFJg6A_qLLouJmn"
-ACTIVE_GROQ_MODEL = "qwen-2.5-coder-32b"
+ACTIVE_GROQ_MODEL = "llama-3.3-70b-versatile" # <-- SIRF YE LINE CHANGE KI
 
 # Premium CSS
 st.markdown("""
     <style>
-   .stApp { background-color: #131416; color: #e3e3e6; }
+  .stApp { background-color: #131416; color: #e3e3e6; }
     label p { color: #ffffff!important; font-weight: 600; font-size: 15px; margin-bottom: 8px; }
-   .stTextArea textarea { background-color: #1c1d21!important; color: #ffffff!important; border: 1px solid #2f3037!important; border-radius: 14px; padding: 14px; font-size: 15px; }
-   .stTextArea textarea::placeholder { color: #9aa0a6!important; }
-   .stButton>button { background-color: #1a73e8!important; color: #ffffff!important; border: none!important; border-radius: 24px!important; padding: 12px 28px!important; font-weight: bold!important; font-size: 15px!important; width: 100%!important; box-shadow: 0 4px 14px rgba(26, 115, 232, 0.3); transition: 0.2s; }
-   .stButton>button:hover { background-color: #1557b0!important; box-shadow: 0 6px 20px rgba(26, 115, 232, 0.4); transform: translateY(-1px); }
-   .google-mobile-btn {
+  .stTextArea textarea { background-color: #1c1d21!important; color: #ffffff!important; border: 1px solid #2f3037!important; border-radius: 14px; padding: 14px; font-size: 15px; }
+  .stTextArea textarea::placeholder { color: #9aa0a6!important; }
+  .stButton>button { background-color: #1a73e8!important; color: #ffffff!important; border: none!important; border-radius: 24px!important; padding: 12px 28px!important; font-weight: bold!important; font-size: 15px!important; width: 100%!important; box-shadow: 0 4px 14px rgba(26, 115, 232, 0.3); transition: 0.2s; }
+  .stButton>button:hover { background-color: #1557b0!important; box-shadow: 0 6px 20px rgba(26, 115, 232, 0.4); transform: translateY(-1px); }
+  .google-mobile-btn {
         display: inline-flex; align-items: center; justify-content: center;
         background-color: #ffffff; color: #1f1f1f!important;
         font-family: 'Roboto', sans-serif; font-weight: bold; font-size: 12px;
@@ -31,9 +31,9 @@ st.markdown("""
         text-decoration: none; float: right; margin-top: -52px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: 0.2s;
     }
-   .google-mobile-btn:hover { background-color: #f2f2f2; box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
-   .google-icon { width: 14px; height: 14px; margin-right: 8px; }
-   .transparent-link {
+  .google-mobile-btn:hover { background-color: #f2f2f2; box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+  .google-icon { width: 14px; height: 14px; margin-right: 8px; }
+  .transparent-link {
         display: block; padding: 14px; margin: 12px 0;
         background: rgba(26, 115, 232, 0.08); border: 1px solid rgba(26, 115, 232, 0.4);
         border-radius: 12px; color: #4facfe!important;
@@ -137,13 +137,11 @@ if send_btn:
 
                 full_context = user_query + image_description
 
-                # FIX 1: [0] add kiya
                 router_prompt = f"Analyze scope: '{full_context}'. If user asks to build/write code, respond CODE. If they seek answers, respond CHAT. Output ONLY 'CODE' or 'CHAT'."
                 router_comp = client.chat.completions.create(model=ACTIVE_GROQ_MODEL, messages=[{"role": "user", "content": router_prompt}], temperature=0.0)
                 decision = router_comp.choices[0].message.content.strip().upper()
 
                 if "CHAT" in decision:
-                    # FIX 2: [0] add kiya
                     chat_comp = client.chat.completions.create(
                         model=ACTIVE_GROQ_MODEL,
                         messages=[{"role": "user", "content": f"Answer in user's language: {full_context}"}],
@@ -158,7 +156,6 @@ if send_btn:
                     struct_prompt = f"Deconstruct this into JSON file map: '{full_context}'. Format: {{'filename.py': 'description'}}. Output RAW JSON ONLY."
                     struct_comp = client.chat.completions.create(model=ACTIVE_GROQ_MODEL, messages=[{"role": "user", "content": struct_prompt}], temperature=0.0)
 
-                    # FIX 3: [0] add kiya + try/except complete
                     raw_json = struct_comp.choices[0].message.content
                     try:
                         file_map = json.loads(raw_json)
@@ -179,4 +176,4 @@ if send_btn:
                 st.error(f"Processing Error: {str(e)}")
 
 st.markdown("---")
-st.caption("© 2026 ClyxessChat AI | Powered by Groq qwen-2.5-coder-32b")
+st.caption("© 2026 ClyxessChat AI | Powered by Groq llama-3.3-70b-versatile") # <-- YAHAN BHI CHANGE KIYA
