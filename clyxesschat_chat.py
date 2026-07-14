@@ -1,159 +1,190 @@
 import streamlit as st
+from groq import Groq
 import requests
 import json
-from groq import Groq
-from streamlit_mic_recorder import mic_recorder
+import time
+from datetime import datetime
 
-# 1. आपके ब्रांड 'ClyxessChat AI' के अनुसार प्रीमियम लेआउट सेट करना
-st.set_page_config(page_title="ClyxessChat AI", page_icon="⚡", layout="centered")
+# ================== CONFIG ==================
+st.set_page_config(page_title="ClyxessChat AI", page_icon="⚡", layout="wide", initial_sidebar_state="expanded")
 
-# =============== [अपनी सीक्रेट कीज यहाँ छुपाएं] ===============
-HIDDEN_GROQ_API_KEY = "YOUR_SECRET_GROQ_API_KEY_HERE"
-SUPABASE_URL = "YOUR_SUPABASE_URL_HERE"
-SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY_HERE"
-# =========================================================
+# YE KEYS IDHAR HI FINAL HAI. BAR ADD NA KARNA PADEGA
+HIDDEN_GROQ_API_KEY = "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"
+SUPABASE_URL = "https://ggcpqhmfjqibpleedlgg.supabase.co/rest/v1/"
+SUPABASE_KEY = "sb_publishable_9kgpcnkITeh-kTXyRFJg6A_qLLouJmn"
+ACTIVE_GROQ_MODEL = "llama-3.3-70b-versatile"
 
+# ================== SESSION STATE ==================
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "user_email" not in st.session_state:
+    st.session_state.user_email = "guest@clyxess.ai"
+
+# ================== CSS ==================
 st.markdown("""
     <style>
-    .stApp { background-color: #0b0c10; color: #e5e7eb; }
-    .stTextArea textarea { background-color: #171921 !important; color: white !important; border: 1px solid #282a36 !important; border-radius: 12px; }
-    
-    .google-mobile-btn {
-        display: inline-flex; align-items: center; justify-content: center;
-        background-color: #ffffff; color: #1f1f1f !important;
-        font-family: 'Roboto', sans-serif; font-weight: bold; font-size: 11px;
-        padding: 6px 12px; border-radius: 20px; border: none;
-        text-decoration: none; float: right; margin-top: -42px;
-    }
-    .google-icon { width: 14px; height: 14px; margin-right: 6px; }
-
-    .transparent-link {
-        display: block; padding: 14px; margin: 10px 0;
-        background: rgba(33, 150, 243, 0.08); border: 1px solid rgba(33, 150, 243, 0.35);
-        border-radius: 10px; color: #4facfe !important;
-        text-decoration: none; font-weight: bold; text-align: center;
-        font-size: 13px; transition: 0.2s;
-    }
-    .transparent-link:hover {
-        background: rgba(33, 150, 243, 0.15); border-color: #2196F3;
-    }
+  .stApp { background-color: #FFFFFF; color: #1a1a1a; }
+    [data-testid="stSidebar"] { background-color: #F7F7F8; border-right: 1px solid #E5E5E5; padding: 16px; }
+    [data-testid="stSidebar"] * { color: #1a1a1a; }
+  .main-title { text-align: center; font-size: 48px; font-weight: 600; margin-top: 100px; margin-bottom: 40px; letter-spacing: -1px; }
+  .input-container { max-width: 760px; margin: 0 auto; position: fixed; bottom: 30px; left: 0; right: 0; padding: 0 20px; }
+  .stTextArea textarea { border: 1px solid #E5E5E5!important; border-radius: 16px!important; padding: 18px 20px!important; font-size: 16px; background: #FFFFFF!important; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+  .stTextArea textarea:focus { border: 1px solid #1a73e8!important; box-shadow: 0 0 0 3px rgba(26,115,232,0.1); }
+  .stButton>button { border-radius: 12px; font-weight: 600; padding: 12px; }
+  .chat-msg { padding: 16px; border-radius: 12px; margin: 12px auto; max-width: 800px; }
+  .user-msg { background: #1a73e8; color: white; margin-left: 20%; }
+  .ai-msg { background: #F7F7F8; border: 1px solid #E5E5E5; margin-right: 20%; }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h2 style='color: #2196F3; margin-top:-20px;'>⚡ ClyxessChat</h2>", unsafe_allow_html=True)
-
-google_html = """
-<a class="google-mobile-btn" href="#">
-    <img class="google-icon" src="https://gstatic.com"/>
-    Sign in
-</a>
-"""
-st.markdown(google_html, unsafe_allow_html=True)
-st.markdown("<p style='color:#666; font-size:12px; margin-top:-14px;'>क्लिकसेस चैट एआई — Portable Code Engine</p>", unsafe_allow_html=True)
-st.markdown("---")
-
-with st.sidebar:
-    st.markdown("### ⚡ ClyxessChat AI")
-    st.caption("v1.3 - Cloud Connected")
-    st.markdown("---")
-    st.success("🔒 एंड-टू-एंड एन्क्रिप्शन सक्रिय है।")
-
-def upload_to_cloud(title, content):
+# ================== SUPABASE FUNCTIONS ==================
+def save_to_supabase(email, query, response, status):
     try:
-        response = requests.post('https://dpaste.com', data={'content': content, 'title': title, 'expiry_days': 1})
-        if response.status_code == 201:
-            return response.text.strip() + ".txt"
-    except Exception:
-        return None
-    return None
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal"
+        }
+        payload = {
+            "email": email,
+            "user_query": query,
+            "ai_response": response[:500], # 500 char tak save
+            "status": status,
+            "created_at": datetime.now().isoformat()
+        }
+        requests.post(f"{SUPABASE_URL}chat_logs", headers=headers, json=payload, timeout=5)
+    except Exception as e:
+        print("Supabase Error:", e)
 
-def save_to_supabase(query, status):
-    """यूजर के डेटा और लिंक्स को Supabase क्लाउड डेटाबेस में सुरक्षित सेव करना"""
-    if SUPABASE_URL and SUPABASE_KEY and SUPABASE_URL != "YOUR_SUPABASE_URL_HERE":
-        try:
-            headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Content-Type": "application/json"}
-            payload = {"user_query": query, "status": status}
-            requests.post(f"{SUPABASE_URL}/rest/v1/user_logs", headers=headers, json=payload)
-        except Exception:
-            pass
+def get_user_chats(email):
+    try:
+        headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+        res = requests.get(f"{SUPABASE_URL}chat_logs?email=eq.{email}&order=created_at.desc&limit=10", headers=headers, timeout=5)
+        return res.json()
+    except:
+        return []
 
-user_query = st.text_area("⌨️ पूछें या नीचे माइक का उपयोग करें:", placeholder="जैसे: 'एक सुंदर HTML लॉगिन पेज बनाओ'...", height=90)
+# ================== SIDEBAR ==================
+with st.sidebar:
+    st.markdown("<h2 style='font-size:22px; font-weight:700; margin-bottom:20px;'>⚡ ClyxessChat</h2>", unsafe_allow_html=True)
 
-col_mic, col_cam, col_gal = st.columns(3)
-with col_mic:
-    st.write("🎙️ वॉइस कमांड:")
-    audio_data = mic_recorder(start_prompt="On", stop_prompt="Off", key='recorder')
-with col_cam:
-    camera_photo = st.camera_input("📷 लाइव फोटो", label_visibility="collapsed")
-with col_gal:
-    # यहाँ एरर फिक्स कर दिया गया है: file_input को हटाकर file_uploader कर दिया है
-    gallery_photo = st.file_uploader("🖼️ गैलरी", type=["png", "jpg", "jpeg"], label_visibility="collapsed")
+    # NEW CHAT
+    if st.button("➕ New Chat", use_container_width=True, type="primary"):
+        st.session_state.chat_history = []
+        st.toast("New Chat Started", icon="✨")
+        st.rerun()
 
-final_image = camera_photo if camera_photo else gallery_photo
+    st.markdown("<hr>", unsafe_allow_html=True)
 
-if audio_data and HIDDEN_GROQ_API_KEY != "YOUR_SECRET_GROQ_API_KEY_HERE":
-    with st.spinner("🔊 आवाज़ पहचानी जा रही है..."):
+    # SIDEBAR MENU - SAB KAAM KAREGA
+    menu_items = {
+        "Computer": "AI Agent mode",
+        "Spaces": "Your workspaces",
+        "Artifacts": "Generated files",
+        "Customize": "Theme & Settings",
+        "Connectors": "Connect Google, Notion",
+        "Skills": "Specialized AI Skills",
+        "Workflows": "Automate tasks"
+    }
+    for item, desc in menu_items.items():
+        if st.button(f"📁 {item}", key=f"sidebar_{item}", use_container_width=True):
+            st.toast(f"{item}: {desc}", icon="🚀")
+
+    st.markdown("<hr>", unsafe_allow_html=True)
+    st.markdown("**📜 History**")
+
+    # Supabase se history load
+    if st.session_state.logged_in:
+        old_chats = get_user_chats(st.session_state.user_email)
+        if len(old_chats) == 0:
+            st.caption("No saved chats")
+        else:
+            for chat in old_chats[:5]:
+                if st.button(chat['user_query'][:25]+"...", key=f"old_{chat['created_at']}", use_container_width=True):
+                    st.toast("Loading old chat - Coming Soon")
+    else:
+        st.caption("Login to see history")
+
+    st.markdown("<div style='position:absolute; bottom:20px; width:85%;'>", unsafe_allow_html=True)
+
+    # LOGIN SYSTEM - FINAL
+    if not st.session_state.logged_in:
+        email_input = st.text_input("Email", placeholder="you@gmail.com", key="login_email")
+        if st.button("👤 Sign In", use_container_width=True):
+            if email_input:
+                st.session_state.logged_in = True
+                st.session_state.user_email = email_input
+                st.toast(f"Welcome {email_input}", icon="✅")
+                st.rerun()
+            else:
+                st.warning("Email daalo bhai")
+    else:
+        st.success(f"Logged in: {st.session_state.user_email}")
+        if st.button("🚪 Logout", use_container_width=True):
+            st.session_state.logged_in = False
+            st.session_state.user_email = "guest@clyxess.ai"
+            st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# ================== MAIN CHAT AREA ==================
+if len(st.session_state.chat_history) == 0:
+    st.markdown("<h1 class='main-title'>clyxesschat</h1>", unsafe_allow_html=True)
+
+# DISPLAY CHAT
+for role, msg in st.session_state.chat_history:
+    if role == "user":
+        st.markdown(f"<div class='chat-msg user-msg'><b>You:</b><br>{msg}</div>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"<div class='chat-msg ai-msg'><b>⚡ Clyxess:</b><br>{msg}</div>", unsafe_allow_html=True)
+
+# ================== INPUT BOX ==================
+st.markdown("<div class='input-container'>", unsafe_allow_html=True)
+col_input, col_send = st.columns([8,1])
+with col_input:
+    user_query = st.text_area("Ask anything...", placeholder="Ask anything... Shift+Enter for new line", height=68, label_visibility="collapsed", key="main_input")
+with col_send:
+    send_btn = st.button("➤", use_container_width=True, key="send", type="primary", help="Send")
+st.markdown("</div>", unsafe_allow_html=True)
+
+# ================== PROCESS LOGIC ==================
+if send_btn and user_query.strip():
+    # User message add
+    st.session_state.chat_history.append(("user", user_query))
+
+    with st.spinner("Clyxess is thinking..."):
         try:
             client = Groq(api_key=HIDDEN_GROQ_API_KEY)
-            transcription = client.audio.transcriptions.create(
-                file=("audio.wav", audio_data['bytes']),
-                model="whisper-large-v3",
-                response_format="text"
+
+            # AI Response
+            chat_comp = client.chat.completions.create(
+                model=ACTIVE_GROQ_MODEL,
+                messages=[
+                    {"role": "system", "content": "You are ClyxessChat AI, a helpful and intelligent assistant. Answer in the same language as user. Be concise and useful."},
+                    {"role": "user", "content": user_query}
+                ],
+                temperature=0.7,
+                max_tokens=2048,
+                stream=False
             )
-            user_query = transcription
-            st.success(f"🗣️ पहचाना गया: '{user_query}'")
+            response = chat_comp.choices[0].message.content
+
+            # AI message add
+            st.session_state.chat_history.append(("assistant", response))
+
+            # Supabase me save
+            if st.session_state.logged_in:
+                save_to_supabase(st.session_state.user_email, user_query, response, "SUCCESS")
+
         except Exception as e:
-            st.error(f"वॉइस एरर: {e}")
+            error_msg = f"API Error: {str(e)}. Key ya billing check karo."
+            st.error(error_msg)
+            st.session_state.chat_history.append(("assistant", "Sorry, API me dikkat aa gayi. Thodi der baad try karo."))
 
-send_btn = st.button("🚀 सेंड करें", use_container_width=True)
+    st.rerun()
 
-if send_btn:
-    if HIDDEN_GROQ_API_KEY == "YOUR_SECRET_GROQ_API_KEY_HERE":
-        st.error("कृपया पहले बैकएंड कोड की लाइन नंबर 10 में अपनी असली Groq API Key सुरक्षित छुपाकर दर्ज करें!")
-    elif not user_query.strip() and not final_image:
-        st.warning("कृपया कुछ इनपुट टाइप करें या रिकॉर्ड करें!")
-    else:
-        client = Groq(api_key=HIDDEN_GROQ_API_KEY)
-        with st.spinner("🧠 क्लिकसेस चैट एआई प्रोसेस कर रहा है..."):
-            try:
-                image_description = ""
-                if final_image:
-                    image_description = "\n[User attached a UI photo. Analyze and clone it perfectly.]"
-
-                full_context = user_query + image_description
-                
-                router_prompt = f"Analyze: '{full_context}'. If user asks for general info, map links, website links, or casual chat, answer CHAT. If they ask to generate programming code/files, answer CODE. One word only: 'CODE' or 'CHAT'."
-                router_comp = client.chat.completions.create(model="qwen-2.5-coder-32b", messages=[{"role": "user", "content": router_prompt}], temperature=0.0)
-                decision = router_comp.choices.message.content.strip().upper()
-
-                if "CHAT" in decision:
-                    chat_comp = client.chat.completions.create(
-                        model="qwen-2.5-coder-32b",
-                        messages=[{"role": "user", "content": f"Respond natively in the user's language: {full_context}"}],
-                        temperature=0.4
-                    )
-                    st.markdown("### 💬 AI प्रतिक्रिया:")
-                    st.write(chat_comp.choices.message.content)
-                    save_to_supabase(user_query, "CHAT_SUCCESS")
-                    
-                else:
-                    struct_prompt = f"Plan architecture JSON for code request: '{full_context}'. Format: {{ 'PART 1: Name.ext': 'desc' }}. JSON ONLY."
-                    struct_comp = client.chat.completions.create(model="qwen-2.5-coder-32b", messages=[{"role": "user", "content": struct_prompt}], temperature=0.0)
-                    
-                    try:
-                        file_map = json.loads(struct_comp.choices.message.content)
-                    except Exception:
-                        file_map = {"PART 1: Full Implementation.py": "Code compilation"}
-
-                    st.markdown("### 💻 पारदर्शी लिंक्स जनरेट हो गए:")
-                    for file_name, file_desc in file_map.items():
-                        code_prompt = f"Write full code for '{file_name}'. Context: {file_desc}. Target: {full_context}. No placeholders. Code only."
-                        code_comp = client.chat.completions.create(model="qwen-2.5-coder-32b", messages=[{"role": "user", "content": code_prompt}], temperature=0.0)
-                        
-                        cloud_link = upload_to_cloud(file_name, code_comp.choices.message.content)
-                        if cloud_link:
-                            st.markdown(f"<a href='{cloud_link}' target='_blank' class='transparent-link'>🔗 {file_name} (ओपन करें)</a>", unsafe_allow_html=True)
-                    st.success("🎉 कार्य सफलतापूर्वक पूर्ण हुआ!")
-                    save_to_supabase(user_query, "CODE_GEN_SUCCESS")
-            except Exception as e:
-                st.error(f"एरर: {e}")
+# Footer
+st.markdown("<div style='height:120px;'></div>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center; color:#999; font-size:12px;'>© 2026 ClyxessChat AI | Powered by Groq</p>", unsafe_allow_html=True)
