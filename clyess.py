@@ -10,7 +10,7 @@ st.set_page_config(page_title="ClyxessChat AI", page_icon="⚡", layout="centere
 
 # Keys - Production me st.secrets me daalna
 HIDDEN_GROQ_API_KEY = "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"
-SUPABASE_URL = "https://supabase.co"
+SUPABASE_URL = "https://ggcpqhmfjqibpleedlgg.supabase.co/rest/v1/"
 SUPABASE_KEY = "sb_publishable_9kgpcnkITeh-kTXyRFJg6A_qLLouJmn"
 ACTIVE_GROQ_MODEL = "llama-3.3-70b-versatile" # <-- SIRF YE LINE CHANGE KI
 
