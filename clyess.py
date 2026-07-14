@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 
 # ========== 1. CONFIG - YAHAN 3 KEY DAL DE ==========
-GROQ_API_KEY = "gsk_yaha_teli_key_daal" # GROQ KEY
+GROQ_API_KEY = "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" # GROQ KEY
 SUPABASE_URL = "https://ggcpqhmfjqibpleedlgg.supabase.co/rest/v1/" # SUPABASE URL
 SUPABASE_KEY = "sb_publishable_9kgpcnkITeh-kTXyRFJg6A_qLLouJmn" # SUPABASE KEY
 # ===================================================
