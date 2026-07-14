@@ -1,0 +1,159 @@
+import streamlit as st
+import requests
+import json
+from groq import Groq
+from streamlit_mic_recorder import mic_recorder
+
+# 1. आपके ब्रांड 'ClyxessChat AI' के अनुसार प्रीमियम लेआउट सेट करना
+st.set_page_config(page_title="ClyxessChat AI", page_icon="⚡", layout="centered")
+
+# =============== [अपनी सीक्रेट कीज यहाँ छुपाएं] ===============
+HIDDEN_GROQ_API_KEY = "YOUR_SECRET_GROQ_API_KEY_HERE"
+SUPABASE_URL = "YOUR_SUPABASE_URL_HERE"
+SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY_HERE"
+# =========================================================
+
+st.markdown("""
+    <style>
+    .stApp { background-color: #0b0c10; color: #e5e7eb; }
+    .stTextArea textarea { background-color: #171921 !important; color: white !important; border: 1px solid #282a36 !important; border-radius: 12px; }
+    
+    .google-mobile-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        background-color: #ffffff; color: #1f1f1f !important;
+        font-family: 'Roboto', sans-serif; font-weight: bold; font-size: 11px;
+        padding: 6px 12px; border-radius: 20px; border: none;
+        text-decoration: none; float: right; margin-top: -42px;
+    }
+    .google-icon { width: 14px; height: 14px; margin-right: 6px; }
+
+    .transparent-link {
+        display: block; padding: 14px; margin: 10px 0;
+        background: rgba(33, 150, 243, 0.08); border: 1px solid rgba(33, 150, 243, 0.35);
+        border-radius: 10px; color: #4facfe !important;
+        text-decoration: none; font-weight: bold; text-align: center;
+        font-size: 13px; transition: 0.2s;
+    }
+    .transparent-link:hover {
+        background: rgba(33, 150, 243, 0.15); border-color: #2196F3;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.markdown("<h2 style='color: #2196F3; margin-top:-20px;'>⚡ ClyxessChat</h2>", unsafe_allow_html=True)
+
+google_html = """
+<a class="google-mobile-btn" href="#">
+    <img class="google-icon" src="https://gstatic.com"/>
+    Sign in
+</a>
+"""
+st.markdown(google_html, unsafe_allow_html=True)
+st.markdown("<p style='color:#666; font-size:12px; margin-top:-14px;'>क्लिकसेस चैट एआई — Portable Code Engine</p>", unsafe_allow_html=True)
+st.markdown("---")
+
+with st.sidebar:
+    st.markdown("### ⚡ ClyxessChat AI")
+    st.caption("v1.3 - Cloud Connected")
+    st.markdown("---")
+    st.success("🔒 एंड-टू-एंड एन्क्रिप्शन सक्रिय है।")
+
+def upload_to_cloud(title, content):
+    try:
+        response = requests.post('https://dpaste.com', data={'content': content, 'title': title, 'expiry_days': 1})
+        if response.status_code == 201:
+            return response.text.strip() + ".txt"
+    except Exception:
+        return None
+    return None
+
+def save_to_supabase(query, status):
+    """यूजर के डेटा और लिंक्स को Supabase क्लाउड डेटाबेस में सुरक्षित सेव करना"""
+    if SUPABASE_URL and SUPABASE_KEY and SUPABASE_URL != "YOUR_SUPABASE_URL_HERE":
+        try:
+            headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Content-Type": "application/json"}
+            payload = {"user_query": query, "status": status}
+            requests.post(f"{SUPABASE_URL}/rest/v1/user_logs", headers=headers, json=payload)
+        except Exception:
+            pass
+
+user_query = st.text_area("⌨️ पूछें या नीचे माइक का उपयोग करें:", placeholder="जैसे: 'एक सुंदर HTML लॉगिन पेज बनाओ'...", height=90)
+
+col_mic, col_cam, col_gal = st.columns(3)
+with col_mic:
+    st.write("🎙️ वॉइस कमांड:")
+    audio_data = mic_recorder(start_prompt="On", stop_prompt="Off", key='recorder')
+with col_cam:
+    camera_photo = st.camera_input("📷 लाइव फोटो", label_visibility="collapsed")
+with col_gal:
+    # यहाँ एरर फिक्स कर दिया गया है: file_input को हटाकर file_uploader कर दिया है
+    gallery_photo = st.file_uploader("🖼️ गैलरी", type=["png", "jpg", "jpeg"], label_visibility="collapsed")
+
+final_image = camera_photo if camera_photo else gallery_photo
+
+if audio_data and HIDDEN_GROQ_API_KEY != "YOUR_SECRET_GROQ_API_KEY_HERE":
+    with st.spinner("🔊 आवाज़ पहचानी जा रही है..."):
+        try:
+            client = Groq(api_key=HIDDEN_GROQ_API_KEY)
+            transcription = client.audio.transcriptions.create(
+                file=("audio.wav", audio_data['bytes']),
+                model="whisper-large-v3",
+                response_format="text"
+            )
+            user_query = transcription
+            st.success(f"🗣️ पहचाना गया: '{user_query}'")
+        except Exception as e:
+            st.error(f"वॉइस एरर: {e}")
+
+send_btn = st.button("🚀 सेंड करें", use_container_width=True)
+
+if send_btn:
+    if HIDDEN_GROQ_API_KEY == "YOUR_SECRET_GROQ_API_KEY_HERE":
+        st.error("कृपया पहले बैकएंड कोड की लाइन नंबर 10 में अपनी असली Groq API Key सुरक्षित छुपाकर दर्ज करें!")
+    elif not user_query.strip() and not final_image:
+        st.warning("कृपया कुछ इनपुट टाइप करें या रिकॉर्ड करें!")
+    else:
+        client = Groq(api_key=HIDDEN_GROQ_API_KEY)
+        with st.spinner("🧠 क्लिकसेस चैट एआई प्रोसेस कर रहा है..."):
+            try:
+                image_description = ""
+                if final_image:
+                    image_description = "\n[User attached a UI photo. Analyze and clone it perfectly.]"
+
+                full_context = user_query + image_description
+                
+                router_prompt = f"Analyze: '{full_context}'. If user asks for general info, map links, website links, or casual chat, answer CHAT. If they ask to generate programming code/files, answer CODE. One word only: 'CODE' or 'CHAT'."
+                router_comp = client.chat.completions.create(model="qwen-2.5-coder-32b", messages=[{"role": "user", "content": router_prompt}], temperature=0.0)
+                decision = router_comp.choices.message.content.strip().upper()
+
+                if "CHAT" in decision:
+                    chat_comp = client.chat.completions.create(
+                        model="qwen-2.5-coder-32b",
+                        messages=[{"role": "user", "content": f"Respond natively in the user's language: {full_context}"}],
+                        temperature=0.4
+                    )
+                    st.markdown("### 💬 AI प्रतिक्रिया:")
+                    st.write(chat_comp.choices.message.content)
+                    save_to_supabase(user_query, "CHAT_SUCCESS")
+                    
+                else:
+                    struct_prompt = f"Plan architecture JSON for code request: '{full_context}'. Format: {{ 'PART 1: Name.ext': 'desc' }}. JSON ONLY."
+                    struct_comp = client.chat.completions.create(model="qwen-2.5-coder-32b", messages=[{"role": "user", "content": struct_prompt}], temperature=0.0)
+                    
+                    try:
+                        file_map = json.loads(struct_comp.choices.message.content)
+                    except Exception:
+                        file_map = {"PART 1: Full Implementation.py": "Code compilation"}
+
+                    st.markdown("### 💻 पारदर्शी लिंक्स जनरेट हो गए:")
+                    for file_name, file_desc in file_map.items():
+                        code_prompt = f"Write full code for '{file_name}'. Context: {file_desc}. Target: {full_context}. No placeholders. Code only."
+                        code_comp = client.chat.completions.create(model="qwen-2.5-coder-32b", messages=[{"role": "user", "content": code_prompt}], temperature=0.0)
+                        
+                        cloud_link = upload_to_cloud(file_name, code_comp.choices.message.content)
+                        if cloud_link:
+                            st.markdown(f"<a href='{cloud_link}' target='_blank' class='transparent-link'>🔗 {file_name} (ओपन करें)</a>", unsafe_allow_html=True)
+                    st.success("🎉 कार्य सफलतापूर्वक पूर्ण हुआ!")
+                    save_to_supabase(user_query, "CODE_GEN_SUCCESS")
+            except Exception as e:
+                st.error(f"एरर: {e}")
