@@ -13,7 +13,7 @@ SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
 # 2026 Fully Active Groq Production Model ID
-ACTIVE_GROQ_MODEL = "model="llama-3.3-70b-versatile" 
+ACTIVE_GROQ_MODEL = "llama-3.3-70b-versatile" 
 
 # Premium CSS Injection for 1:1 ChatGPT Aesthetic and High-Contrast Text Clarity
 st.markdown("""
