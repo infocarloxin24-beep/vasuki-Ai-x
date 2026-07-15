@@ -8,9 +8,9 @@ from streamlit_mic_recorder import mic_recorder
 st.set_page_config(page_title="ClyxessChat AI", page_icon="💬", layout="centered", initial_sidebar_state="collapsed")
 
 # Absolute Fixed Infrastructure Credentials - Encrypted Backend Storage
-HIDDEN_GROQ_API_KEY = st.secrets["GROQ_API_KEY"
-SUPABASE_URL = st.secrets["SUPABASE_URL"
-SUPABASE_KEY = st.secrets["SUPABASE_KEY"
+HIDDEN_GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
 # 2026 Fully Active Groq Production Model ID
 ACTIVE_GROQ_MODEL = "qwen-2.5-coder-32b"
