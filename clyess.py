@@ -1,6 +1,5 @@
 import streamlit as st
 import json
-import re # YE 1 LINE ADD KI
 from groq import Groq
 import time
 
@@ -20,7 +19,9 @@ st.markdown("""
 .stChatInputContainer {background: transparent;}
 div[data-testid="stChatInput"] {background:#2f2f2f; border-radius:24px; border:1px solid #444;}
 div[data-testid="stChatInput"] input {background:transparent; color:white; border:none;}
-/* MIC HATA DIYA ISLIYE YE LINE HATA DI */
+/* Mic button ko input ke andar chipka diya */
+div[data-testid="stChatInput"] button {position: absolute; right: 45px; bottom: 8px; background:transparent; border:none; font-size:20px;}
+/* Send button */
 div[data-testid="stChatInput"] button[kind="secondary"] {right: 10px;}
 </style>
 """, unsafe_allow_html=True)
@@ -36,7 +37,9 @@ for msg in st.session_state.messages:
 # INPUT
 prompt = st.chat_input("Message ClyxessChat AI...")
 
-# MIC BUTTON HATA DIYA - YE PURA BLOCK HATA DIYA
+# MIC BUTTON - CHAT INPUT KE ANDAR
+if st.button("🎙️", help="Voice Input", key="mic_btn"):
+    st.toast("Voice ke liye streamlit-mic-recorder install karna padega")
 
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -55,8 +58,8 @@ if prompt:
 
             if "CHAT" in decision:
                 res = client.chat.completions.create(
-                    model=ACTIVE_GROQ_MODEL,
-                    messages=st.session_state.messages, # <-- YE 1 LINE BADLI. PURI HISTORY BHEJI
+                    model=ACTIVE_GROQ_MODEL, 
+                    messages=[{"role":"user","content":prompt}], 
                     max_tokens=2000
                 )
                 ans = res.choices[0].message.content
@@ -65,10 +68,13 @@ if prompt:
 
             else:
                 # 2. CODE MODO - SAKHT PROMPT
-                code_prompt = f"""RETURN ONLY VALID JSON. NO TEXT. NO ```
-TASK: {prompt}
-FORMAT: {{"filename.html":"FULL CODE","filename.css":"FULL CODE"}}""" # SAKHT KIYA
-
+                code_prompt = f"""
+                You are a senior developer. Generate COMPLETE working code for: {prompt}
+                CRITICAL RULES:
+                1. Return ONLY valid JSON. No text, no ``` before or after.
+                2. Format: {{"index.html": "full html code here", "style.css": "full css code here"}}
+                3. Code must be complete and runnable.
+                """
                 res = client.chat.completions.create(
                     model=ACTIVE_GROQ_MODEL,
                     messages=[{"role":"user","content":code_prompt}],
@@ -76,8 +82,7 @@ FORMAT: {{"filename.html":"FULL CODE","filename.css":"FULL CODE"}}""" # SAKHT KI
                     temperature=0.0
                 )
                 raw = res.choices[0].message.content.strip()
-                # YE 1 LINE ADD KI JSON SAF KARNE KE LIYE
-                raw = re.search(r'\{.*\}', raw, re.DOTALL).group() if re.search(r'\{.*\}', raw, re.DOTALL) else "{}"
+                raw = raw.replace("```json","").replace("```","").strip()
 
                 try:
                     files = json.loads(raw)
@@ -87,7 +92,7 @@ FORMAT: {{"filename.html":"FULL CODE","filename.css":"FULL CODE"}}""" # SAKHT KI
                         with st.expander(f"📄 View {name}"):
                             st.code(code, language=name.split(".")[-1])
                         success_msg += f"<b>{name}</b> ✅<br>"
-
+                    
                     st.session_state.messages.append({"role": "assistant", "content": f"Code Generated:<br>{success_msg}"})
 
                 except json.JSONDecodeError as e:
