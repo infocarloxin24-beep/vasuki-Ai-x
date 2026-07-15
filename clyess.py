@@ -8,8 +8,8 @@ from streamlit_mic_recorder import mic_recorder
 st.set_page_config(page_title="ClyxessChat AI", page_icon="💬", layout="centered", initial_sidebar_state="collapsed")
 
 # Absolute Fixed Infrastructure Credentials - Encrypted Backend Storage
-HIDDEN_GROQ_API_KEY = "gf"
-SUPABASE_URL = "https://supabase.co"
+HIDDEN_GROQ_API_KEY = "GROQ_API_KEY"
+SUPABASE_URL = "https://anudnaqtgzkjciplrrgg.supabase.co/rest/v1/"
 SUPABASE_KEY = "sb_publishable_9kgpcnkITeh-kTXyRFJg6A_qLLouJmn"
 
 # 2026 Fully Active Groq Production Model ID
