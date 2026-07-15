@@ -9,7 +9,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 HIDDEN_GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
-ACTIVE_GROQ_MODEL = "llama-3.3-70b-versatile"
+ACTIVE_GROQ_MODEL = "llama-3.1-8b-instant"  
 
 # CHATGPT JAISE CSS
 st.markdown("""
