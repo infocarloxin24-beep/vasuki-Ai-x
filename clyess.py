@@ -8,7 +8,7 @@ from streamlit_mic_recorder import mic_recorder
 st.set_page_config(page_title="ClyxessChat AI", page_icon="💬", layout="centered", initial_sidebar_state="collapsed")
 
 # Absolute Fixed Infrastructure Credentials - Encrypted Backend Storage
-HIDDEN_GROQ_API_KEY = "gjkyf"
+HIDDEN_GROQ_API_KEY = "gsk"
 SUPABASE_URL = "https://supabase.co"
 SUPABASE_KEY = "sb_publishable_9kgpcnkITeh-kTXyRFJg6A_qLLouJmn"
 
@@ -124,7 +124,7 @@ with col_gal:
 # Enforces strict 1-photo limits dynamically to conserve resources
 final_image = camera_photo if camera_photo else gallery_photo
 
-# Voice Processing Pipeline Node
+# Voice Transcription Handling Service
 if audio_data and HIDDEN_GROQ_API_KEY:
     with st.spinner("Decoding acoustics..."):
         try:
@@ -135,7 +135,7 @@ if audio_data and HIDDEN_GROQ_API_KEY:
                 response_format="text"
             )
             user_query = transcription
-            st.success(f"Recognized Speech: '{user_query}'")
+            st.success(f"Captured: '{user_query}'")
         except Exception as e:
             st.error(f"Voice Server Pipeline Sync Interruption: {e}")
 
