@@ -60,7 +60,7 @@ if prompt:
                 res = client.chat.completions.create(
                     model=ACTIVE_GROQ_MODEL, 
                     messages=[{"role":"user","content":prompt}], 
-                    max_tokens=2000
+                    max_tokens=8000
                 )
                 ans = res.choices[0].message.content
                 st.write(ans)
