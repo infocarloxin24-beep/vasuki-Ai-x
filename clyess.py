@@ -2,24 +2,17 @@ import streamlit as st
 import json
 from groq import Groq
 import time
-import base64
 
 st.set_page_config(page_title="ClyxessChat AI", page_icon="💬", layout="wide")
 
 HIDDEN_GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 ACTIVE_GROQ_MODEL = "llama-3.3-70b-versatile"
 
-# SESSION INIT
+# SESSION INIT - HISTORY SAVE HOGI
 if "all_chats" not in st.session_state:
     st.session_state.all_chats = {"Chat 1": []}
 if "current_chat" not in st.session_state:
     st.session_state.current_chat = "Chat 1"
-
-# LOGO KO BASE64 ME CONVERT KARNE KE LIYE
-def get_base64_of_image(image_path):
-    with open(image_path, "rb") as f:
-        data = f.read()
-    return base64.b64encode(data).decode()
 
 # CSS
 st.markdown("""
@@ -35,32 +28,33 @@ div[data-testid="stChatInput"] input {background:transparent; color:white; borde
 </style>
 """, unsafe_allow_html=True)
 
-# SIDEBAR - SIRF HISTORY, NEW CHAT BUTTON HATA DIYA
+# SIDEBAR - HISTORY YAHI SAVE RAHEGI
 with st.sidebar:
     st.title("💬 History")
 
     for chat_name in list(st.session_state.all_chats.keys())[::-1]:
         col1, col2 = st.columns([4,1])
         with col1:
+            # CHAT SELECT KARNE KE LIYE
             if st.button(chat_name, key=f"btn_{chat_name}", use_container_width=True):
                 st.session_state.current_chat = chat_name
                 st.rerun()
         with col2:
+            # DELETE KARNE KE LIYE
             if st.button("🗑️", key=f"del_{chat_name}"):
                 if len(st.session_state.all_chats) > 1:
                     del st.session_state.all_chats[chat_name]
                     st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
                     st.rerun()
 
-# LOGO CENTER ME TOP PE
+# LOGO CENTER TOP PE
 st.markdown('<div class="logo-center">', unsafe_allow_html=True)
-st.image("An_aGiLNTLUuWptCFY6UhqlOD3kC_kSiREkOJsHBSE0TcZt1fAKnHi9GvWGAt54NXFW9QCvmBuIbVtVHL7PldmJjUJTxwlq7d6pPmeotx4W0mYffpU9pHcY", use_column_width=False, width=400)
+st.image("An_aGiLNTLUuWptCFY6UhqlOD3kC_kSiREkOJsHBSE0TcZt1fAKnHi9GvWGAt54NXFW9QCvmBuIbVtVHL7PldmJjUJTxwlq7d6pPmeotx4W0mYffpU9pHcY", width=400)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# CURRENT CHAT TITLE
 st.markdown(f"### {st.session_state.current_chat}")
 
-# CHAT HISTORY
+# CHAT HISTORY DIKHEGI
 for msg in st.session_state.all_chats[st.session_state.current_chat]:
     with st.chat_message(msg["role"], avatar="🧑" if msg["role"]=="user" else "🤖"):
         st.markdown(msg["content"], unsafe_allow_html=True)
@@ -68,10 +62,10 @@ for msg in st.session_state.all_chats[st.session_state.current_chat]:
 prompt = st.chat_input("Message ClyxessChat AI...")
 
 if prompt:
-    # USER MSG SAVE
+    # 1. USER MSG SAVE
     st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": prompt})
 
-    # PEHLE MSG SE AUTO RENAME
+    # 2. PEHLE MSG SE AUTO RENAME - Chat 1 -> "Biryani kaise..."
     if st.session_state.current_chat == "Chat 1" and len(st.session_state.all_chats[st.session_state.current_chat]) == 1:
         new_name = prompt[:35] + "..."
         st.session_state.all_chats[new_name] = st.session_state.all_chats.pop(st.session_state.current_chat)
@@ -80,7 +74,7 @@ if prompt:
 
     client = Groq(api_key=HIDDEN_GROQ_API_KEY)
     with st.chat_message("assistant", avatar="🤖"):
-        with st.spinner("Code likh raha hun..."):
+        with st.spinner("Generating..."):
 
             router = client.chat.completions.create(
                 model=ACTIVE_GROQ_MODEL,
@@ -99,14 +93,11 @@ if prompt:
                 st.write(ans)
                 st.session_state.all_chats[st.session_state.current_chat].append({"role": "assistant", "content": ans})
 
-            else: # CODE MODE - AB PAKKA FILE BANEGA
+            else: # CODE MODE
                 code_prompt = f"""
                 You are a senior developer. User wants: {prompt}
-                RULES:
-                1. You MUST return ONLY valid JSON. No extra text.
-                2. Each key is filename. Each value is COMPLETE code.
-                3. Example: {{"index.html": "<!DOCTYPE html>...full code...", "style.css": "body{{}}...full code..."}}
-                4. Do NOT use ```. Do NOT explain.
+                RULES: Return ONLY valid JSON. No extra text. No ```
+                Format: {{"index.html": "FULL CODE", "style.css": "FULL CODE"}}
                 """
                 res = client.chat.completions.create(
                     model=ACTIVE_GROQ_MODEL,
@@ -114,12 +105,11 @@ if prompt:
                     max_tokens=8000,
                     temperature=0.0
                 )
-                raw = res.choices[0].message.content.strip()
-                raw = raw.replace("```json","").replace("```","").strip()
+                raw = res.choices[0].message.content.strip().replace("```json","").replace("```","").strip()
 
                 try:
                     files = json.loads(raw)
-                    st.markdown("### 📁 Files Ready - Download karo:")
+                    st.markdown("### 📁 Files Ready:")
                     success_msg = "Code Generated:<br>"
 
                     for name, code in files.items():
@@ -131,7 +121,6 @@ if prompt:
 
                     st.session_state.all_chats[st.session_state.current_chat].append({"role": "assistant", "content": success_msg})
 
-                except json.JSONDecodeError as e:
-                    st.error("AI ne JSON kharab diya. Phir se try karo")
-                    st.code(raw, language="json")
-                    st.session_state.all_chats[st.session_state.current_chat].append({"role": "assistant", "content": "Error: Code nahi ban paya"})
+                except:
+                    st.error("Code generate nahi hua")
+                    st.code(raw)
