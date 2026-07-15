@@ -8,7 +8,7 @@ from streamlit_mic_recorder import mic_recorder
 st.set_page_config(page_title="ClyxessChat AI", page_icon="💬", layout="centered", initial_sidebar_state="collapsed")
 
 # Absolute Fixed Infrastructure Credentials - Encrypted Backend Storage
-HIDDEN_GROQ_API_KEY = "gsk"
+HIDDEN_GROQ_API_KEY = "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"
 SUPABASE_URL = "https://supabase.co"
 SUPABASE_KEY = "sb_publishable_9kgpcnkITeh-kTXyRFJg6A_qLLouJmn"
 
@@ -99,13 +99,8 @@ def upload_to_cloud(title, content):
     return None
 
 def save_to_supabase(query, status):
-    if SUPABASE_URL and SUPABASE_KEY:
-        try:
-            headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Content-Type": "application/json"}
-            payload = {"user_query": query, "status": status}
-            requests.post(f"{SUPABASE_URL}/rest/v1/user_logs", headers=headers, json=payload)
-        except Exception:
-            pass
+    # Completely flattened to single line execution to eliminate indentation risks
+    if SUPABASE_URL and SUPABASE_KEY: requests.post(f"{SUPABASE_URL}/rest/v1/user_logs", headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Content-Type": "application/json"}, json={"user_query": query, "status": status})
 
 # 4. Centralized User Ingestion Terminal Box
 user_query = st.text_area("⌨ Ask anything or give code specifications:", placeholder="Message ClyxessChat AI...", height=110, label_visibility="collapsed")
@@ -135,7 +130,7 @@ if audio_data and HIDDEN_GROQ_API_KEY:
                 response_format="text"
             )
             user_query = transcription
-            st.success(f"Captured: '{user_query}'")
+            st.success(f"Recognized Speech: '{user_query}'")
         except Exception as e:
             st.error(f"Voice Server Pipeline Sync Interruption: {e}")
 
