@@ -1,13 +1,1 @@
-streamlit
-pandas
-requests
-pytz
-pycountry
-beautifulsoup4
-supabase
-nltk
-numpy
-scikit-learn
-plotly
-streamlit-oauth
-streamlit-autorefresh
+
