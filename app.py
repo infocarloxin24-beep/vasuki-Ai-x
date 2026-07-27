@@ -338,7 +338,7 @@ supabase: Client = create_client(url, key)
 
 st.set_page_config(page_title="HumbotiX - Bot Detector", page_icon="Ḫ", layout="wide")
 st.title("HumbotiX Ai - Universal Bot Detector")
-st.caption("Global Ai Powered Forensic Platform For Multiple Social Media Account & Bot Detection | Powered by AI")
+st.caption("Global Forensic Platform For Multiple Social Media Account & Bot Detection | Powered by AI")
 
 st.info("⚠️ Disclaimer: This tool provides an AI-assisted probability estimate and should not be treated as definitive proof.")
 
