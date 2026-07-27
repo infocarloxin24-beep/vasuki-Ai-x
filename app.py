@@ -336,7 +336,7 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-st.set_page_config(page_title="HumbotiX - Bot Detector", page_icon="🐍", layout="wide")
+st.set_page_config(page_title="HumbotiX - Bot Detector", page_icon="Ḫ", layout="wide")
 st.title("HumbotiX Ai - Universal Bot Detector")
 st.caption("Global Multi Social-Platform Account & Text Scanner | Powered by AI")
 
