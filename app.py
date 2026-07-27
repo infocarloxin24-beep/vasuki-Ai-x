@@ -820,6 +820,6 @@ with col_right:
 
 st.markdown("---")
 st.markdown(
-    "<div style='text-align: center; color: #666; padding: 20px 0; font-size: 14px;'>  HumbotiX Ai Bot Detection-Engine  v2.0 | © 2026 All Rights Reserved</div>",
+    "<div style='text-align: center; color: #666; padding: 20px 0; font-size: 14px;'>  HumbotiX AI Bot Detection Engine  v2.0 | © 2026 All Rights Reserved</div>",
     unsafe_allow_html=True
 )
