@@ -1,7 +1,6 @@
 import streamlit as st
-from login_system import login_page
-from analysis import run_all_analysis, init_sidebar_history, show_sidebar_share 
-from dashboard import dashboard_page
+from login_system import login_page, dashboard_page
+from analysis import run_all_analysis, init_sidebar_history, show_sidebar_share
 init_sidebar_history()
 show_sidebar_share()
 st.set_page_config(
