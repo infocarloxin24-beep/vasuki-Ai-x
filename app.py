@@ -824,3 +824,11 @@ st.markdown(
     "<div style='text-align: center; color: #666; padding: 20px 0; font-size: 14px;'>  HumbotiX AI Bot Detection Engine  v2.0 | © 2026 All Rights Reserved</div>",
     unsafe_allow_html=True
 )
+# ===== LOGIN GATE =====
+if "logged_in" not in st.session_state: 
+    st.session_state.logged_in = False
+
+if not st.session_state.logged_in: 
+    st.stop()  # Yahan ruk jayega aur login dikhayega
+    login_page()
+# ===== LOGIN GATE END =====
