@@ -824,12 +824,13 @@ st.markdown(
     "<div style='text-align: center; color: #666; padding: 20px 0; font-size: 14px;'>  HumbotiX AI Bot Detection Engine  v2.0 | © 2026 All Rights Reserved</div>",
     unsafe_allow_html=True
 )
-# ===== LOGIN GATE START =====
+# ===== LOGIN GATE =====
 if "logged_in" not in st.session_state: 
     st.session_state.logged_in = False
 
 if not st.session_state.logged_in: 
-    from login_system import login_page
     login_page()
-    st.stop() 
+    st.stop()
+else:
+    dashboard_page()
 # ===== LOGIN GATE END =====
