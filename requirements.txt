@@ -11,3 +11,5 @@ scikit-learn
 plotly
 streamlit-oauth
 streamlit-autorefresh
+authlib
+python-dotenv
