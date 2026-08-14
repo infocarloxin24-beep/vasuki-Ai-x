@@ -87,3 +87,22 @@ def login_page():
                     st.rerun()
         
         st.markdown('</div>', unsafe_allow_html=True)
+def dashboard_page():
+    import streamlit as st
+    from analysis import run_all_analysis, init_sidebar_history, show_sidebar_share
+    
+    # Sidebar
+    init_sidebar_history()
+    show_sidebar_share()
+    
+    with st.sidebar:
+        st.title("🤖 HumbotixAi")
+        st.write(f"Welcome: {st.session_state.get('phone', 'User')}")
+        if st.button("Logout"):
+            st.session_state.logged_in = False
+            st.rerun()
+    
+    # Dashboard
+    st.title("HumbotixAi Dashboard")
+    st.success("Login Successful!")
+  
