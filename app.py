@@ -1,6 +1,5 @@
 import streamlit as st
 from login_system import login_page
-from dashboard import dashboard_page  # <-- ye 2 nayi line sabse upar
 from analysis import run_all_analysis, init_sidebar_history, show_sidebar_share
 init_sidebar_history()
 show_sidebar_share()
@@ -824,11 +823,12 @@ st.markdown(
     "<div style='text-align: center; color: #666; padding: 20px 0; font-size: 14px;'>  HumbotiX AI Bot Detection Engine  v2.0 | © 2026 All Rights Reserved</div>",
     unsafe_allow_html=True
 )
-# ===== LOGIN GATE =====
+# ===== LOGIN GATE START =====
 if "logged_in" not in st.session_state: 
     st.session_state.logged_in = False
 
 if not st.session_state.logged_in: 
-    st.stop()  # Yahan ruk jayega aur login dikhayega
+    from login_system import login_page
     login_page()
+    st.stop() 
 # ===== LOGIN GATE END =====
